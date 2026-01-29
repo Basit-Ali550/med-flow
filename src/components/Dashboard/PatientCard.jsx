@@ -15,6 +15,7 @@ export const PatientCard = ({
   patient,
   onEdit,
   onDelete,
+  onClick,
   dragHandleProps,
   isOverlay,
 }) => {
@@ -80,6 +81,7 @@ export const PatientCard = ({
   return (
     <Card
       {...dragHandleProps} // Applied to the entire card
+      onClick={() => onClick?.(patient)}
       className={`p-4 border shadow-sm transition-all group relative
         cursor-grab active:cursor-grabbing hover:border-teal-400
         ${isOverlay ? "shadow-2xl rotate-2 scale-105 bg-white border-teal-500" : "bg-white border-gray-100"}

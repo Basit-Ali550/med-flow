@@ -21,11 +21,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Menu, Loader2 } from "lucide-react";
+import { Plus, Search, Loader2 } from "lucide-react";
 
 // Custom Components
 import { DeleteModal } from "@/components/Modals/DeleteModal";
 import { AIAnalysisModal } from "@/components/Modals/AIAnalysisModal";
+import { TreatmentConfirmationModal } from "@/components/Modals/TreatmentConfirmationModal";
 import { PatientCard } from "@/components/Dashboard/PatientCard";
 import { SortablePatientCard } from "@/components/Dashboard/SortablePatientCard";
 import { DroppableContainer } from "@/components/Dashboard/DroppableContainer";
@@ -33,6 +34,7 @@ import { DroppableContainer } from "@/components/Dashboard/DroppableContainer";
 // Hooks
 import { usePatients } from "@/hooks/usePatients";
 
+// --- Helpers ---
 const calculateCurrentWaitTime = (registeredAt) => {
   if (!registeredAt) return 0;
   return Math.floor((Date.now() - new Date(registeredAt).getTime()) / 60000);
@@ -41,7 +43,7 @@ const calculateCurrentWaitTime = (registeredAt) => {
 export default function NurseDashboard() {
   const router = useRouter();
   
-  // Data Hook
+  // --- Data Hook ---
   const { 
     items, 
     setItems, 
@@ -50,23 +52,30 @@ export default function NurseDashboard() {
     deletePatient 
   } = usePatients();
 
-  // Local State
+  // --- Local State ---
   const [searchQuery, setSearchQuery] = useState("");
   const [activeId, setActiveId] = useState(null);
   
-  // Modals State
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, patient: null });
-  const [aiModal, setAiModal] = useState({ isOpen: false, patient: null });
+  // --- Modal State Refactor ---
+  // Consolidated state for all modals (cleaner than multiple booleans)
+  const [activeModal, setActiveModal] = useState({ 
+    type: null, // 'DELETE' | 'AI' | 'TREATMENT'
+    patient: null 
+  });
 
-  // DnD Sensors
+  const openModal = (type, patient) => setActiveModal({ type, patient });
+  const closeModal = () => setActiveModal({ type: null, patient: null });
+
+  // --- DnD Sensors ---
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // Filter Items
+  // --- Filter Items ---
   const unscheduledItems = items.filter(p => p.status === 'Waiting');
-  const scheduledItems = items.filter(p => p.status !== 'Waiting');
+  // Only show Triaged items in Scheduled column. 'In Progress' items are hidden.
+  const scheduledItems = items.filter(p => p.status === 'Triaged');
 
   const filteredUnscheduled = unscheduledItems.filter(p => 
     p.fullName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -121,11 +130,8 @@ export default function NurseDashboard() {
       // Trigger AI Modal
       if (shouldTriggerAI) {
         const waitTime = calculateCurrentWaitTime(draggedItem.registeredAt);
-          
-        setAiModal({
-          isOpen: true,
-          patient: { ...draggedItem, waitTime },
-        });
+        // Note: We open modal with the *updated* local data context
+        openModal('AI', { ...draggedItem, waitTime });
       }
 
       // API Call
@@ -142,16 +148,47 @@ export default function NurseDashboard() {
   const handleEdit = (patient) => router.push(`/nurse/edit-patient/${patient._id}`);
   
   const handleDeleteClick = (patient) => {
-    setDeleteModal({ isOpen: true, patient });
+    openModal('DELETE', patient);
   };
 
   const handleConfirmDelete = async () => {
-    const patient = deleteModal.patient;
+    const patient = activeModal.patient;
     if (!patient) return;
     
+    // Optimistic Delete handled by hook, but we assume success
     const success = await deletePatient(patient._id);
     if (success) {
-       setDeleteModal({ isOpen: false, patient: null });
+       closeModal();
+    }
+  };
+
+  const handleCardClick = (patient) => {
+    // Only open for Scheduled/Triaged patients
+    if (patient.status === 'Triaged') {
+      openModal('TREATMENT', patient);
+    }
+  };
+
+  const handleConfirmTreatment = async () => {
+    const patient = activeModal.patient;
+    if (!patient) return;
+    
+    // Optimistic Update: Update UI immediately
+    const previousItems = [...items];
+    setItems(prev => prev.map(p => 
+      p._id === patient._id ? { ...p, status: 'In Progress' } : p
+    ));
+    
+    closeModal();
+
+    // API Call
+    const success = await updatePatientStatus(patient._id, 'In Progress');
+    if (success) {
+       toast.success("Patient sent to treatment room");
+    } else {
+       // Rollback
+       setItems(previousItems);
+       toast.error("Failed to update status");
     }
   };
 
@@ -159,22 +196,29 @@ export default function NurseDashboard() {
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-center" richColors />
       
-      {/* Modals */}
+      {/* --- Unified Modals Section --- */}
       <DeleteModal 
-        isOpen={deleteModal.isOpen}
-        onClose={() => setDeleteModal({ isOpen: false, patient: null })}
+        isOpen={activeModal.type === 'DELETE'}
+        onClose={closeModal}
         onConfirm={handleConfirmDelete}
         title="Delete Patient?"
         description="Are you sure you want to delete this patient? The patient will be removed from the waitlist. This action cannot be undone."
       />
 
       <AIAnalysisModal 
-        isOpen={aiModal.isOpen}
-        onClose={() => setAiModal({ isOpen: false, patient: null })}
-        patient={aiModal.patient}
+        isOpen={activeModal.type === 'AI'}
+        onClose={closeModal}
+        patient={activeModal.patient} // Passed dynamically
       />
 
-      {/* Header removed - provided by Layout */}
+      <TreatmentConfirmationModal
+        isOpen={activeModal.type === 'TREATMENT'}
+        onClose={closeModal}
+        onConfirm={handleConfirmTreatment}
+        patientName={activeModal.patient?.fullName}
+      />
+
+      {/* Header provided by Layout */}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto p-8">
@@ -260,6 +304,7 @@ export default function NurseDashboard() {
                         patient={patient} 
                         onEdit={handleEdit} 
                         onDelete={handleDeleteClick}
+                        onClick={handleCardClick}
                       />
                     ))}
                     
