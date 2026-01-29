@@ -1,35 +1,27 @@
 "use client";
 
 import React, { useState } from "react";
-import Badge from "../Badge/Badge";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
-  DragHandleIcon,
-  EditIcon,
-  DeleteIcon,
-  CheckCircleIcon,
-  AlertCircleIcon,
-} from "../Icons/Icons";
+  GripVertical,
+  Pencil,
+  Trash2,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 
 const PatientCard = ({ patient, onEdit, onDelete, draggable = true }) => {
-  const [editHover, setEditHover] = useState(false);
-  const [deleteHover, setDeleteHover] = useState(false);
-
   const { name, age, gender, symptoms, painLevel, waitTime, vitalsProvided } =
     patient;
 
   const styles = {
-    card: {
-      backgroundColor: "var(--color-bg-white)",
-      borderRadius: "12px",
-      border: "1px solid var(--color-border)",
-      padding: "16px",
-      boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
-      transition: "box-shadow 0.2s ease",
-    },
     cardContent: {
       display: "flex",
       alignItems: "flex-start",
       justifyContent: "space-between",
+      padding: "16px",
     },
     leftSection: {
       display: "flex",
@@ -40,10 +32,6 @@ const PatientCard = ({ patient, onEdit, onDelete, draggable = true }) => {
       marginTop: "4px",
       cursor: "grab",
       color: "var(--color-text-muted)",
-    },
-    dragIcon: {
-      width: "20px",
-      height: "20px",
     },
     patientInfo: {
       flex: 1,
@@ -83,52 +71,25 @@ const PatientCard = ({ patient, onEdit, onDelete, draggable = true }) => {
       alignItems: "flex-end",
       gap: "12px",
     },
-    vitalsIcon: {
-      width: "16px",
-      height: "16px",
-    },
     actions: {
       display: "flex",
       alignItems: "center",
-      gap: "8px",
-    },
-    editButton: {
-      padding: "8px",
-      background: editHover ? "var(--color-edit-hover-bg)" : "transparent",
-      border: "none",
-      borderRadius: "8px",
-      cursor: "pointer",
-      color: editHover
-        ? "var(--color-edit-hover)"
-        : "var(--color-text-secondary)",
-      transition: "all 0.2s ease",
-    },
-    deleteButton: {
-      padding: "8px",
-      background: deleteHover ? "var(--color-delete-hover-bg)" : "transparent",
-      border: "none",
-      borderRadius: "8px",
-      cursor: "pointer",
-      color: deleteHover
-        ? "var(--color-delete-hover)"
-        : "var(--color-text-secondary)",
-      transition: "all 0.2s ease",
-    },
-    actionIcon: {
-      width: "20px",
-      height: "20px",
+      gap: "4px",
     },
   };
 
   return (
-    <div style={styles.card} draggable={draggable}>
+    <Card
+      className="shadow-sm hover:shadow-md transition-shadow"
+      draggable={draggable}
+    >
       <div style={styles.cardContent}>
         {/* Left Section */}
         <div style={styles.leftSection}>
           {/* Drag Handle */}
           {draggable && (
             <div style={styles.dragHandle}>
-              <DragHandleIcon style={styles.dragIcon} />
+              <GripVertical className="w-5 h-5" />
             </div>
           )}
 
@@ -145,53 +106,61 @@ const PatientCard = ({ patient, onEdit, onDelete, draggable = true }) => {
               <span style={styles.symptomsLabel}>Symptoms:</span> {symptoms}
             </p>
 
-            {/* Badges */}
+            {/* Badges - Using Shadcn Badge */}
             <div style={styles.badges}>
-              <Badge variant="pain">Pain: {painLevel}/10</Badge>
-              <Badge variant="waitTime">Wait time: {waitTime} minutes</Badge>
+              <Badge className="bg-red-500 text-white hover:bg-red-600 rounded-md">
+                Pain: {painLevel}/10
+              </Badge>
+              <Badge className="bg-yellow-300 text-gray-800 hover:bg-yellow-400 rounded-md">
+                Wait time: {waitTime} minutes
+              </Badge>
             </div>
           </div>
         </div>
 
         {/* Right Section */}
         <div style={styles.rightSection}>
-          {/* Vitals Status */}
+          {/* Vitals Status - Using Shadcn Badge */}
           {vitalsProvided ? (
-            <Badge variant="vitalsProvided">
-              <CheckCircleIcon style={styles.vitalsIcon} />
+            <Badge
+              variant="outline"
+              className="text-teal-600 border-teal-600 gap-1"
+            >
+              <CheckCircle className="w-4 h-4" />
               Vitals provided
             </Badge>
           ) : (
-            <Badge variant="missingVitals">
-              <AlertCircleIcon style={styles.vitalsIcon} />
+            <Badge
+              variant="outline"
+              className="text-red-500 border-red-500 gap-1"
+            >
+              <AlertCircle className="w-4 h-4" />
               Missing Vitals
             </Badge>
           )}
 
-          {/* Action Buttons */}
+          {/* Action Buttons - Using Shadcn Button */}
           <div style={styles.actions}>
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => onEdit?.(patient)}
-              style={styles.editButton}
-              onMouseEnter={() => setEditHover(true)}
-              onMouseLeave={() => setEditHover(false)}
-              aria-label="Edit patient"
+              className="hover:text-teal-600 hover:bg-teal-50"
             >
-              <EditIcon style={styles.actionIcon} />
-            </button>
-            <button
+              <Pencil className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => onDelete?.(patient)}
-              style={styles.deleteButton}
-              onMouseEnter={() => setDeleteHover(true)}
-              onMouseLeave={() => setDeleteHover(false)}
-              aria-label="Delete patient"
+              className="hover:text-red-600 hover:bg-red-50"
             >
-              <DeleteIcon style={styles.actionIcon} />
-            </button>
+              <Trash2 className="w-5 h-5" />
+            </Button>
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 
