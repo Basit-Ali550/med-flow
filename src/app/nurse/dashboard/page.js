@@ -13,6 +13,7 @@ import {
   DragOverlay,
   useDroppable,
 } from "@dnd-kit/core";
+import { DeleteModal } from "@/components/Modals/DeleteModal";
 import {
   SortableContext,
   sortableKeyboardCoordinates,
@@ -186,6 +187,12 @@ export default function NurseDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeId, setActiveId] = useState(null);
+  
+  // Delete Modal State
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    patient: null,
+  });
 
   // DnD Sensors
   const sensors = useSensors(
@@ -215,7 +222,8 @@ export default function NurseDashboard() {
 
   // Filter Items
   const unscheduledItems = items.filter(p => p.status === 'Waiting');
-  const scheduledItems = items.filter(p => p.status === 'Triaged');
+  // Anything not waiting is considered scheduled/triaged
+  const scheduledItems = items.filter(p => p.status !== 'Waiting');
 
   const filteredUnscheduled = unscheduledItems.filter(p => 
     p.fullName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -246,7 +254,7 @@ export default function NurseDashboard() {
 
     if (draggedItem.status === 'Waiting' && isOverScheduled) {
        newStatus = 'Triaged';
-    } else if (draggedItem.status === 'Triaged' && isOverUnscheduled) {
+    } else if (draggedItem.status !== 'Waiting' && isOverUnscheduled) {
        newStatus = 'Waiting';
     }
 
@@ -275,12 +283,22 @@ export default function NurseDashboard() {
   // Actions
   const handleAddPatient = () => router.push("/nurse/add-patient");
   
-  const handleDelete = async (patient) => {
-    if (!confirm("Delete this patient?")) return;
+  const handleDeleteClick = (patient) => {
+    setDeleteModal({
+      isOpen: true,
+      patient: patient,
+    });
+  };
+
+  const verifyDelete = async () => {
+    const patient = deleteModal.patient;
+    if (!patient) return;
+
     try {
        await fetch(`/api/patients/${patient._id}`, { method: 'DELETE' });
        setItems(prev => prev.filter(p => p._id !== patient._id));
        toast.success("Patient deleted");
+       setDeleteModal({ isOpen: false, patient: null });
     } catch(e) {
       toast.error("Could not delete");
     }
@@ -293,6 +311,15 @@ export default function NurseDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-center" richColors />
+      
+      {/* Delete Confirmation Modal */}
+      <DeleteModal 
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, patient: null })}
+        onConfirm={verifyDelete}
+        title="Delete Patient?"
+        description="Are you sure you want to delete this patient? The patient will be removed from the waitlist. This action cannot be undone."
+      />
 
       {/* Header */}
       <header className="bg-teal-600 text-white shadow-md sticky top-0 z-50">
@@ -359,7 +386,7 @@ export default function NurseDashboard() {
                       key={patient._id} 
                       patient={patient} 
                       onEdit={handleEdit} 
-                      onDelete={handleDelete}
+                      onDelete={handleDeleteClick}
                     />
                   ))}
                   {!isLoading && filteredUnscheduled.length === 0 && (
@@ -389,19 +416,19 @@ export default function NurseDashboard() {
                 }`}
               >
                  <SortableContext items={filteredScheduled.map(p => p._id)} strategy={verticalListSortingStrategy}>
-                    {filteredScheduled.length === 0 && (
-                       <div className="text-center text-gray-400 pointer-events-none">
-                          Drag patients here for Triage
-                       </div>
-                    )}
                     {filteredScheduled.map(patient => (
                       <SortablePatientCard 
                         key={patient._id} 
                         patient={patient} 
                         onEdit={handleEdit} 
-                        onDelete={handleDelete}
+                        onDelete={handleDeleteClick}
                       />
                     ))}
+                    
+                    {/* Persistent Drop Zone Placeholder */}
+                    <div className="mt-4 p-6 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-400 text-sm font-medium bg-gray-50/50 transition-colors hover:border-teal-200 hover:bg-teal-50/30">
+                       Drag patients here for Triage
+                    </div>
                  </SortableContext>
               </DroppableContainer>
             </div>

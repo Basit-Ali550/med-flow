@@ -124,7 +124,7 @@ const patientSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Waiting', 'In Progress', 'Completed', 'Discharged', 'Transferred', 'Cancelled'],
+      enum: ['Waiting', 'Triaged', 'In Progress', 'Completed', 'Discharged', 'Transferred', 'Cancelled'],
       default: 'Waiting',
     },
     priority: {
