@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Patient from '@/models/Patient';
+import '@/models/Nurse'; // Import to ensure schema is registered
 import { successResponse, errorResponse } from '@/lib/auth';
 import mongoose from 'mongoose';
 

@@ -4,7 +4,8 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { User, ShieldCheck } from "lucide-react";
-
+import Image from "next/image";
+import logo from "../assets/images/MedFlow.svg";
 export default function Home() {
   const router = useRouter();
 
@@ -19,12 +20,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-5">
       {/* Logo */}
-      <div className="w-72 h-48 bg-teal-50/80 rounded-full flex items-center justify-center mb-6 shadow-sm">
-        <div className="flex items-center gap-1">
-          <span className="text-5xl font-bold text-teal-600">Med</span>
-          <span className="text-5xl font-bold text-teal-500">Flow</span>
-        </div>
-      </div>
+<Image src={logo} alt="Logo" width={200} height={200} />
 
       {/* Subtitle */}
       <p className="text-xl text-gray-500 mb-12 text-center">

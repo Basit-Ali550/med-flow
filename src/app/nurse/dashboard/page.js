@@ -3,6 +3,22 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast, Toaster } from "sonner";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,129 +33,119 @@ import {
   CheckCircle, 
   AlertCircle,
   Loader2,
-  RefreshCw
 } from "lucide-react";
 
-// Patient Card Component
-const PatientCard = ({ patient, onEdit, onDelete, isDeleting }) => {
-  // Calculate age from dateOfBirth
-  const calculateAge = (dob) => {
-    if (!dob) return 'N/A';
-    const today = new Date();
-    const birthDate = new Date(dob);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
+// --- Sortable Item Component ---
 
-  // Calculate wait time from registeredAt
-  const calculateWaitTime = (registeredAt) => {
-    if (!registeredAt) return 0;
-    const now = new Date();
-    const registered = new Date(registeredAt);
-    return Math.floor((now - registered) / (1000 * 60)); // minutes
-  };
+function SortablePatientCard({ patient, onEdit, onDelete }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: patient._id, data: { patient } });
 
-  const age = patient.age || calculateAge(patient.dateOfBirth);
-  const waitTime = calculateWaitTime(patient.registeredAt);
-  const vitalsProvided = !!(patient.vitalSigns && Object.keys(patient.vitalSigns).length > 0);
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 999 : 1,
+  };
 
   return (
-    <Card 
-      className={`mb-3 p-4 bg-white border-l-4 ${
-        vitalsProvided ? "border-l-yellow-300" : "border-l-red-500"
-      }`}
-    >
-      <div className="flex justify-between items-start mb-2">
-        {/* Left Content */}
-        <div className="flex items-start gap-3">
-          <GripHorizontal className="w-5 h-5 text-gray-400 cursor-grab mt-0.5" />
-          <div>
-            {/* Name Row */}
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-base text-gray-900">
-                {patient.fullName}
-              </span>
-              <span className="text-sm text-gray-500">
-                ({age}y, {patient.gender || 'N/A'})
-              </span>
-            </div>
-            
-            {/* Symptoms */}
-            <div className="text-sm text-gray-500 mt-1 flex items-start gap-2">
-              <span className="font-medium">Symptoms:</span>
-              <span className="line-clamp-1">{patient.symptoms}</span>
-            </div>
-            
-            {/* Badges */}
-            <div className="flex gap-2 mt-3 flex-wrap">
-              <Badge className="bg-red-500 text-white rounded-md px-2 py-1 text-xs">
-                Pain: {patient.painLevel || 0}/10
-              </Badge>
-              <Badge className="bg-yellow-300 text-gray-800 rounded-md px-2 py-1 text-xs">
-                Wait time: {waitTime} minutes
-              </Badge>
-              {patient.triageLevel && patient.triageLevel !== 'Pending' && (
-                <Badge className={`rounded-md px-2 py-1 text-xs ${
-                  patient.triageLevel === 'Critical' ? 'bg-red-600 text-white' :
-                  patient.triageLevel === 'Urgent' ? 'bg-orange-500 text-white' :
-                  patient.triageLevel === 'Semi-Urgent' ? 'bg-yellow-500 text-gray-900' :
-                  'bg-green-500 text-white'
-                }`}>
-                  {patient.triageLevel}
-                </Badge>
-              )}
-            </div>
-          </div>
+    <div ref={setNodeRef} style={style} className="mb-3 touch-none">
+      <PatientCard 
+        patient={patient} 
+        onEdit={onEdit} 
+        onDelete={onDelete} 
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+    </div>
+  );
+}
+
+// --- Patient Card Component ---
+const PatientCard = ({ patient, onEdit, onDelete, dragHandleProps, isOverlay }) => {
+  // Helpers
+  const calculateAge = (dob) => {
+    if (!dob) return 'N/A';
+    const diff = Date.now() - new Date(dob).getTime();
+    return Math.abs(new Date(diff).getUTCFullYear() - 1970);
+  };
+
+  const calculateWaitTime = (registeredAt) => {
+    if (!registeredAt) return 0;
+    const diff = (Date.now() - new Date(registeredAt).getTime()) / 60000;
+    return Math.floor(diff);
+  };
+
+  const age = calculateAge(patient.dateOfBirth);
+  const waitTime = calculateWaitTime(patient.registeredAt);
+  const hasVitals = patient.vitalSigns && Object.keys(patient.vitalSigns).length > 0;
+  
+  // Style config
+  const isHighPain = (patient.painLevel || 0) > 6;
+  
+  return (
+    <Card className={`p-4 border shadow-sm transition-all ${isOverlay ? 'shadow-xl rotate-1 scale-105 bg-white' : 'bg-white border-gray-100 hover:border-teal-100'}`}>
+      <div className="flex gap-3">
+        {/* Drag Handle */}
+        <div 
+          {...dragHandleProps}
+          className="mt-1 text-gray-300 hover:text-teal-600 cursor-grab active:cursor-grabbing"
+        >
+          <GripHorizontal className="w-5 h-5" />
         </div>
 
-        {/* Right Section */}
-        <div className="flex flex-col items-end gap-3">
-          {/* Vitals Status */}
-          {vitalsProvided ? (
-            <Badge 
-              variant="outline" 
-              className="text-teal-600 border-teal-600 gap-1 rounded-md"
-            >
-              <CheckCircle className="w-3 h-3" />
-              Vitals provided
-            </Badge>
-          ) : (
-            <Badge 
-              variant="outline" 
-              className="text-red-500 border-red-500 gap-1 rounded-md"
-            >
-              <AlertCircle className="w-3 h-3" />
-              Missing Vitals
-            </Badge>
-          )}
-          
-          {/* Actions */}
-          <div className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => onEdit?.(patient)}
-              className="hover:text-teal-600 hover:bg-teal-50"
-            >
-              <Pencil className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => onDelete?.(patient)}
-              disabled={isDeleting}
-              className="hover:text-red-600 hover:bg-red-50"
-            >
-              {isDeleting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4" />
-              )}
-            </Button>
+        {/* Content */}
+        <div className="flex-1">
+          {/* Header */}
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <h3 className="font-bold text-gray-900 text-base">
+                {patient.fullName} <span className="text-gray-400 font-normal text-sm ml-1">({age}y, {patient.gender})</span>
+              </h3>
+            </div>
+            
+            {hasVitals ? (
+              <Badge variant="outline" className="bg-teal-50 text-teal-600 border-teal-200 text-[10px] px-2 py-0.5 font-medium flex gap-1 items-center">
+                <CheckCircle className="w-3 h-3" /> Vitals provided
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-red-50 text-red-500 border-red-200 text-[10px] px-2 py-0.5 font-medium flex gap-1 items-center">
+                <AlertCircle className="w-3 h-3" /> Missing Vitals
+              </Badge>
+            )}
+          </div>
+
+          {/* Symptoms */}
+          <div className="text-sm text-gray-600 mb-3 flex gap-2">
+             <span className="font-semibold text-gray-900 shrink-0">=</span >
+             <span className="font-semibold text-gray-700 shrink-0">Symptoms:</span>
+             <span className="truncate">{patient.symptoms}</span>
+          </div>
+
+          {/* Footer Stats & Actions */}
+          <div className="flex justify-between items-center">
+             <div className="flex gap-2">
+                <Badge variant="secondary" className={`${isHighPain ? 'bg-red-100 text-red-700' : 'bg-teal-50 text-teal-700'} border-transparent rounded px-2`}>
+                   Pain: {patient.painLevel}/10
+                </Badge>
+                <Badge variant="secondary" className="bg-yellow-50 text-yellow-700 border-yellow-100 rounded px-2">
+                   Wait time: {waitTime} minutes
+                </Badge>
+             </div>
+
+             <div className="flex gap-1">
+                <button onClick={() => onEdit?.(patient)} className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-gray-50 rounded-md transition-colors">
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button onClick={() => onDelete?.(patient)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-gray-50 rounded-md transition-colors">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+             </div>
           </div>
         </div>
       </div>
@@ -147,28 +153,34 @@ const PatientCard = ({ patient, onEdit, onDelete, isDeleting }) => {
   );
 };
 
+// --- Main Dashboard Component ---
+
 export default function NurseDashboard() {
   const router = useRouter();
-  const [patients, setPatients] = useState([]);
+  
+  // State
+  const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeId, setActiveId] = useState(null);
 
-  // Fetch patients from API
+  // DnD Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  // Fetch Data
   const fetchPatients = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/patients?limit=50&sortBy=registeredAt&sortOrder=desc');
+      const response = await fetch('/api/patients?limit=100&sortBy=registeredAt&sortOrder=desc');
       const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch patients');
+      if (data.success) {
+        setItems(data.data.patients || []);
       }
-      
-      setPatients(data.data?.patients || []);
     } catch (error) {
-      console.error('Error fetching patients:', error);
-      toast.error(error.message || 'Failed to load patients');
+      toast.error("Failed to load patients");
     } finally {
       setIsLoading(false);
     }
@@ -178,183 +190,207 @@ export default function NurseDashboard() {
     fetchPatients();
   }, []);
 
-  // Filter patients based on status
-  const unscheduledPatients = patients.filter(p => 
-    p.status === 'Waiting' && (p.triageLevel === 'Pending' || !p.triageLevel)
+  // Filter Items
+  // "Unscheduled" = Status 'Waiting' (Left side)
+  // "Scheduled" = Status 'Triaged' (Right side)
+  const unscheduledItems = items.filter(p => p.status === 'Waiting');
+  const scheduledItems = items.filter(p => p.status === 'Triaged');
+
+  const filteredUnscheduled = unscheduledItems.filter(p => 
+    p.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const scheduledPatients = patients.filter(p => 
-    p.status === 'Waiting' && p.triageLevel && p.triageLevel !== 'Pending'
+  const filteredScheduled = scheduledItems.filter(p => 
+    p.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Filter by search query
-  const filterBySearch = (patientList) => {
-    if (!searchQuery.trim()) return patientList;
-    const query = searchQuery.toLowerCase();
-    return patientList.filter(p => 
-      p.fullName?.toLowerCase().includes(query) ||
-      p.symptoms?.toLowerCase().includes(query)
-    );
-  };
+  // Handle Drag End
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    setActiveId(null);
 
-  const handleAddPatient = () => {
-    router.push("/nurse/add-patient");
-  };
+    if (!over) return;
 
-  const handleEditPatient = (patient) => {
-    // TODO: Implement edit modal or redirect to edit page
-    toast.info(`Editing patient: ${patient.fullName}`);
-    // router.push(`/nurse/edit-patient/${patient._id}`);
-  };
+    const patientId = active.id;
+    const isOverScheduled = over.id === 'scheduled-container' || scheduledItems.find(p => p._id === over.id);
+    const isOverUnscheduled = over.id === 'unscheduled-container' || unscheduledItems.find(p => p._id === over.id);
 
-  const handleDeletePatient = async (patient) => {
-    if (!confirm(`Are you sure you want to delete ${patient.fullName}?`)) {
-      return;
+    // Initial state copy for revert
+    const previousItems = [...items];
+    const draggedItem = items.find(p => p._id === patientId);
+
+    if (!draggedItem) return;
+
+    let newStatus = null;
+
+    // Moving Logic
+    if (draggedItem.status === 'Waiting' && isOverScheduled) {
+      newStatus = 'Triaged';
+    } else if (draggedItem.status === 'Triaged' && isOverUnscheduled) {
+      newStatus = 'Waiting';
     }
 
-    try {
-      setDeletingId(patient._id);
-      const response = await fetch(`/api/patients/${patient._id}`, {
-        method: 'DELETE',
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to delete patient');
+    if (newStatus) {
+      // Optimistic Update
+      setItems(prev => prev.map(p => 
+        p._id === patientId ? { ...p, status: newStatus } : p
+      ));
+
+      // API Call
+      try {
+        await fetch(`/api/patients/${patientId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus }),
+        });
+        toast.success(newStatus === 'Triaged' ? 'Patient moved to Scheduled' : 'Patient moved to Unscheduled');
+      } catch (error) {
+        toast.error("Failed to update status");
+        setItems(previousItems); // Revert
       }
-      
-      setPatients(prev => prev.filter(p => p._id !== patient._id));
-      toast.success(data.message || "Patient deleted successfully.");
-    } catch (error) {
-      toast.error(error.message || "Failed to delete patient.");
-    } finally {
-      setDeletingId(null);
     }
+  };
+
+  const handleDragStart = (event) => setActiveId(event.active.id);
+  const activePatient = items.find(p => p._id === activeId);
+
+  // Actions
+  const handleAddPatient = () => router.push("/nurse/add-patient");
+  
+  const handleDelete = async (patient) => {
+    if (!confirm("Delete this patient?")) return;
+    try {
+       await fetch(`/api/patients/${patient._id}`, { method: 'DELETE' });
+       setItems(prev => prev.filter(p => p._id !== patient._id));
+       toast.success("Patient deleted");
+    } catch(e) {
+      toast.error("Could not delete");
+    }
+  };
+
+  const handleEdit = (patient) => {
+    // Navigate to edit page (To be implemented)
+    toast.info("Edit functionality coming soon");
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       <Toaster position="top-center" richColors />
 
       {/* Header */}
-      <header className="bg-teal-600 text-white py-4 px-6 flex items-center justify-between">
-        <div className="bg-white rounded-full py-2 px-3 flex items-center gap-0.5">
-          <span className="text-teal-600 font-bold text-xs">Med</span>
-          <span className="text-teal-500 font-bold text-xs">Flow</span>
+      <header className="bg-teal-600 text-white shadow-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="bg-white rounded-full py-1.5 px-3 shadow-sm">
+             <span className="text-teal-600 font-bold">Med</span>
+             <span className="text-teal-400 font-bold">Flow</span>
+          </div>
+          <div className="text-center">
+            <h1 className="text-xl font-bold">Triage Dashboard</h1>
+            <p className="text-teal-100 text-xs opacity-90">Manage patients in the ER</p>
+          </div>
+          <Button variant="ghost" size="icon" className="text-white hover:bg-teal-700">
+            <Menu className="w-6 h-6" />
+          </Button>
         </div>
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold">Triage Dashboard</h1>
-          <p className="text-sm text-teal-100 mt-0.5">Manage patients in the ER</p>
-        </div>
-        <button className="text-white">
-          <Menu className="w-6 h-6" />
-        </button>
       </header>
 
-      {/* Main Content */}
-      <main className="p-6">
-        {/* Top Bar */}
-        <div className="flex justify-end items-center gap-4 mb-6">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchPatients}
-            disabled={isLoading}
-            className="gap-2"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <div className="relative w-64">
-            <Input
-              placeholder="Search Patients..."
+      {/* Main */}
+      <main className="max-w-7xl mx-auto p-8">
+        
+        {/* Actions Bar */}
+        <div className="flex justify-end gap-4 mb-8">
+          <div className="relative w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input 
+              placeholder="Search Patients..." 
+              className="pl-9 rounded-full border-gray-200 shadow-sm"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pr-10"
+              onChange={e => setSearchQuery(e.target.value)}
             />
-            <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
-          <Button 
-            onClick={handleAddPatient}
-            className="bg-teal-600 hover:bg-teal-700 text-white shadow-lg"
-          >
-            <Plus className="w-5 h-5" />
-            Add Patient
+          <Button onClick={handleAddPatient} className="rounded-full bg-teal-600 hover:bg-teal-700 px-6 shadow-md shadow-teal-600/20">
+            <Plus className="w-4 h-4 mr-2" /> Add Patient
           </Button>
         </div>
 
-        {/* Loading State */}
-        {isLoading && patients.length === 0 ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
-            <span className="ml-2 text-gray-600">Loading patients...</span>
-          </div>
-        ) : (
-          /* Two Column Layout */
-          <div className="grid grid-cols-2 gap-6">
-            {/* Unscheduled Column */}
-            <div>
-              <div className="flex justify-between items-center mb-4 p-3 px-4 bg-white rounded-lg shadow-sm">
+        {/* DnD Area */}
+        <DndContext 
+          sensors={sensors} 
+          collisionDetection={closestCenter} 
+          onDragStart={handleDragStart} 
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            {/* Left: Unscheduled */}
+            <div className="flex flex-col gap-4">
+              <Card className="p-4 flex justify-between items-center shadow-sm border-gray-100">
                 <div>
-                  <div className="text-base font-semibold text-gray-900">unscheduled</div>
-                  <div className="text-xs text-gray-500 mt-0.5">Waiting list</div>
+                   <h2 className="font-bold text-lg text-gray-900">unscheduled</h2>
+                   <p className="text-xs text-gray-500 font-medium">Waiting list</p>
                 </div>
-                <div className="bg-teal-700 text-white rounded-lg px-3.5 py-1.5 text-base font-semibold">
-                  {filterBySearch(unscheduledPatients).length}
+                <span className="text-2xl font-bold">{filteredUnscheduled.length}</span>
+              </Card>
+
+              <SortableContext id="unscheduled-container" items={filteredUnscheduled.map(p => p._id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-3 min-h-[300px]">
+                  {isLoading ? (
+                    <div className="flex justify-center pt-10"><Loader2 className="animate-spin text-teal-600" /></div>
+                  ) : filteredUnscheduled.map(patient => (
+                    <SortablePatientCard 
+                      key={patient._id} 
+                      patient={patient} 
+                      onEdit={handleEdit} 
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                  {!isLoading && filteredUnscheduled.length === 0 && (
+                    <div className="text-center py-10 text-gray-400 border-2 border-dashed rounded-xl bg-gray-50/50">
+                       No unscheduled patients
+                    </div>
+                  )}
                 </div>
-              </div>
-              
-              {/* Patient Cards */}
-              {filterBySearch(unscheduledPatients).length === 0 ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-400 bg-white">
-                  No unscheduled patients
-                </div>
-              ) : (
-                filterBySearch(unscheduledPatients).map((patient) => (
-                  <PatientCard
-                    key={patient._id}
-                    patient={patient}
-                    onEdit={handleEditPatient}
-                    onDelete={handleDeletePatient}
-                    isDeleting={deletingId === patient._id}
-                  />
-                ))
-              )}
+              </SortableContext>
             </div>
 
-            {/* Scheduled Column */}
-            <div>
-              <div className="flex justify-between items-center mb-4 p-3 px-4 bg-white rounded-lg shadow-sm">
+            {/* Right: Scheduled */}
+            <div className="flex flex-col gap-4">
+               <Card className="p-4 flex justify-between items-center shadow-sm border-gray-100">
                 <div>
-                  <div className="text-base font-semibold text-gray-900">scheduled</div>
-                  <div className="text-xs text-gray-500 mt-0.5">Triaged list</div>
+                   <h2 className="font-bold text-lg text-gray-900">scheduled</h2>
+                   <p className="text-xs text-gray-500 font-medium">triaged list</p>
                 </div>
-                <div className="bg-teal-700 text-white rounded-lg px-3.5 py-1.5 text-base font-semibold">
-                  {filterBySearch(scheduledPatients).length}
+                <span className="text-2xl font-bold">{filteredScheduled.length}</span>
+              </Card>
+
+              <SortableContext id="scheduled-container" items={filteredScheduled.map(p => p._id)} strategy={verticalListSortingStrategy}>
+                <div className={`space-y-3 min-h-[300px] border-2 border-dashed rounded-xl p-4 transition-colors ${
+                  filteredScheduled.length === 0 ? 'border-gray-300 bg-white flex items-center justify-center' : 'border-transparent'
+                }`}>
+                  {filteredScheduled.length === 0 && (
+                     <div className="text-center text-gray-400">
+                        Drag patients here for Triage
+                     </div>
+                  )}
+                  {filteredScheduled.map(patient => (
+                    <SortablePatientCard 
+                      key={patient._id} 
+                      patient={patient} 
+                      onEdit={handleEdit} 
+                      onDelete={handleDelete}
+                    />
+                  ))}
                 </div>
-              </div>
-              
-              {/* Drop Zone or Patient Cards */}
-              {filterBySearch(scheduledPatients).length === 0 ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center text-gray-400 bg-white min-h-52 flex items-center justify-center">
-                  Drag patients here for Triage
-                </div>
-              ) : (
-                filterBySearch(scheduledPatients).map((patient) => (
-                  <PatientCard
-                    key={patient._id}
-                    patient={patient}
-                    onEdit={handleEditPatient}
-                    onDelete={handleDeletePatient}
-                    isDeleting={deletingId === patient._id}
-                  />
-                ))
-              )}
+              </SortableContext>
             </div>
+
           </div>
-        )}
+
+          <DragOverlay>
+            {activePatient ? <PatientCard patient={activePatient} isOverlay /> : null}
+          </DragOverlay>
+
+        </DndContext>
       </main>
     </div>
   );
 }
-
