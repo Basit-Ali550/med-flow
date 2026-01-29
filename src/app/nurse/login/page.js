@@ -45,45 +45,18 @@ export default function NurseLogin() {
     }
   };
 
-  const styles = {
-    container: {
-      minHeight: "100vh",
-      backgroundColor: "var(--color-bg-primary)",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "20px",
-    },
-    iconWrapper: {
-      marginBottom: "32px",
-    },
-    form: {
-      width: "100%",
-      maxWidth: "360px",
-    },
-    formGroup: {
-      marginBottom: "20px",
-    },
-    buttonWrapper: {
-      display: "flex",
-      justifyContent: "center",
-      marginTop: "32px",
-    },
-  };
-
   return (
-    <div style={styles.container}>
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-5">
       <Toaster position="top-center" richColors />
 
       {/* Login Icon */}
-      <div style={styles.iconWrapper}>
+      <div className="mb-8">
         <LogIn className="w-16 h-16 text-teal-600" strokeWidth={1.5} />
       </div>
 
       {/* Login Form */}
-      <form style={styles.form} onSubmit={handleSubmit}>
-        <div style={styles.formGroup}>
+      <form className="w-full max-w-sm" onSubmit={handleSubmit}>
+        <div className="mb-5">
           <Label htmlFor="username">Username</Label>
           <Input
             id="username"
@@ -97,7 +70,7 @@ export default function NurseLogin() {
           />
         </div>
 
-        <div style={styles.formGroup}>
+        <div className="mb-5">
           <Label htmlFor="password">Password</Label>
           <Input
             id="password"
@@ -111,7 +84,7 @@ export default function NurseLogin() {
           />
         </div>
 
-        <div style={styles.buttonWrapper}>
+        <div className="flex justify-center mt-8">
           <Button
             type="submit"
             disabled={isLoading}

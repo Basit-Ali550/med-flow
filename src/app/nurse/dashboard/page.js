@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast, Toaster } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -43,82 +44,35 @@ const samplePatients = [
 
 // Patient Card Component
 const PatientCard = ({ patient, onEdit, onDelete }) => {
-  const styles = {
-    card: {
-      marginBottom: "12px",
-      borderLeft: patient.vitalsProvided ? "4px solid #fde047" : "4px solid #ef4444",
-      padding: "16px",
-      backgroundColor: "#fff",
-    },
-    header: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "flex-start",
-      marginBottom: "8px",
-    },
-    leftContent: {
-      display: "flex",
-      alignItems: "flex-start",
-      gap: "12px",
-    },
-    dragHandle: {
-      color: "#9ca3af",
-      cursor: "grab",
-      marginTop: "2px",
-    },
-    nameRow: {
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-    },
-    name: {
-      fontWeight: "600",
-      fontSize: "16px",
-      color: "#111827",
-    },
-    demographics: {
-      fontSize: "14px",
-      color: "#6b7280",
-    },
-    symptoms: {
-      fontSize: "14px",
-      color: "#6b7280",
-      marginTop: "4px",
-      display: "flex",
-      alignItems: "flex-start",
-      gap: "8px",
-    },
-    symptomsLabel: {
-      fontWeight: "500",
-    },
-    badges: {
-      display: "flex",
-      gap: "8px",
-      marginTop: "12px",
-    },
-    actions: {
-      display: "flex",
-      gap: "4px",
-    },
-  };
-
   return (
-    <Card style={styles.card}>
-      <div style={styles.header}>
-        <div style={styles.leftContent}>
-          <GripHorizontal style={styles.dragHandle} className="w-5 h-5" />
+    <Card 
+      className={`mb-3 p-4 bg-white border-l-4 ${
+        patient.vitalsProvided ? "border-l-yellow-300" : "border-l-red-500"
+      }`}
+    >
+      <div className="flex justify-between items-start mb-2">
+        {/* Left Content */}
+        <div className="flex items-start gap-3">
+          <GripHorizontal className="w-5 h-5 text-gray-400 cursor-grab mt-0.5" />
           <div>
-            <div style={styles.nameRow}>
-              <span style={styles.name}>{patient.name}</span>
-              <span style={styles.demographics}>
+            {/* Name Row */}
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-base text-gray-900">
+                {patient.name}
+              </span>
+              <span className="text-sm text-gray-500">
                 ({patient.age}y, {patient.gender})
               </span>
             </div>
-            <div style={styles.symptoms}>
-              <span style={styles.symptomsLabel}>Symptoms:</span>
+            
+            {/* Symptoms */}
+            <div className="text-sm text-gray-500 mt-1 flex items-start gap-2">
+              <span className="font-medium">Symptoms:</span>
               <span>{patient.symptoms}</span>
             </div>
-            <div style={styles.badges}>
+            
+            {/* Badges */}
+            <div className="flex gap-2 mt-3">
               <Badge className="bg-red-500 text-white rounded-md px-2 py-1 text-xs">
                 Pain: {patient.painLevel}/10
               </Badge>
@@ -128,19 +82,30 @@ const PatientCard = ({ patient, onEdit, onDelete }) => {
             </div>
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "12px" }}>
+
+        {/* Right Section */}
+        <div className="flex flex-col items-end gap-3">
+          {/* Vitals Status */}
           {patient.vitalsProvided ? (
-            <Badge variant="outline" className="text-teal-600 border-teal-600 gap-1 rounded-md">
+            <Badge 
+              variant="outline" 
+              className="text-teal-600 border-teal-600 gap-1 rounded-md"
+            >
               <CheckCircle className="w-3 h-3" />
               Vitals provided
             </Badge>
           ) : (
-            <Badge variant="outline" className="text-red-500 border-red-500 gap-1 rounded-md">
+            <Badge 
+              variant="outline" 
+              className="text-red-500 border-red-500 gap-1 rounded-md"
+            >
               <AlertCircle className="w-3 h-3" />
               Missing Vitals
             </Badge>
           )}
-          <div style={styles.actions}>
+          
+          {/* Actions */}
+          <div className="flex gap-1">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -165,12 +130,13 @@ const PatientCard = ({ patient, onEdit, onDelete }) => {
 };
 
 export default function NurseDashboard() {
+  const router = useRouter();
   const [unscheduledPatients, setUnscheduledPatients] = useState(samplePatients);
   const [scheduledPatients, setScheduledPatients] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleAddPatient = () => {
-    toast.success("Add patient modal opened");
+    router.push("/nurse/add-patient");
   };
 
   const handleEditPatient = (patient) => {
@@ -183,154 +149,37 @@ export default function NurseDashboard() {
     toast.success("Patient deleted successfully.");
   };
 
-  const styles = {
-    container: {
-      minHeight: "100vh",
-      backgroundColor: "#f3f4f6",
-    },
-    header: {
-      backgroundColor: "#0d9488",
-      color: "#fff",
-      padding: "16px 24px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    logo: {
-      backgroundColor: "#fff",
-      borderRadius: "9999px",
-      padding: "8px 12px",
-      display: "flex",
-      alignItems: "center",
-      gap: "2px",
-    },
-    logoMed: {
-      color: "#0d9488",
-      fontWeight: "700",
-      fontSize: "12px",
-    },
-    logoFlow: {
-      color: "#14b8a6",
-      fontWeight: "700",
-      fontSize: "12px",
-    },
-    headerCenter: {
-      textAlign: "center",
-    },
-    headerTitle: {
-      fontSize: "24px",
-      fontWeight: "600",
-    },
-    headerSubtitle: {
-      fontSize: "14px",
-      color: "#ccfbf1",
-      marginTop: "2px",
-    },
-    menuButton: {
-      color: "#fff",
-    },
-    main: {
-      padding: "24px",
-    },
-    topBar: {
-      display: "flex",
-      justifyContent: "flex-end",
-      alignItems: "center",
-      gap: "16px",
-      marginBottom: "24px",
-    },
-    searchWrapper: {
-      position: "relative",
-      width: "250px",
-    },
-    searchIcon: {
-      position: "absolute",
-      right: "12px",
-      top: "50%",
-      transform: "translateY(-50%)",
-      color: "#9ca3af",
-    },
-    columnsContainer: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: "24px",
-    },
-    column: {
-      backgroundColor: "transparent",
-    },
-    columnHeader: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: "16px",
-      padding: "12px 16px",
-      backgroundColor: "#fff",
-      borderRadius: "8px",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-    },
-    columnTitle: {
-      fontSize: "16px",
-      fontWeight: "600",
-      color: "#111827",
-    },
-    columnSubtitle: {
-      fontSize: "12px",
-      color: "#6b7280",
-      marginTop: "2px",
-    },
-    countBadge: {
-      backgroundColor: "#0f766e",
-      color: "#fff",
-      borderRadius: "8px",
-      padding: "6px 14px",
-      fontSize: "16px",
-      fontWeight: "600",
-    },
-    dropZone: {
-      border: "2px dashed #d1d5db",
-      borderRadius: "8px",
-      padding: "48px",
-      textAlign: "center",
-      color: "#9ca3af",
-      backgroundColor: "#fff",
-      minHeight: "200px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-  };
-
   return (
-    <div style={styles.container}>
+    <div className="min-h-screen bg-gray-100">
       <Toaster position="top-center" richColors />
 
       {/* Header */}
-      <header style={styles.header}>
-        <div style={styles.logo}>
-          <span style={styles.logoMed}>Med</span>
-          <span style={styles.logoFlow}>Flow</span>
+      <header className="bg-teal-600 text-white py-4 px-6 flex items-center justify-between">
+        <div className="bg-white rounded-full py-2 px-3 flex items-center gap-0.5">
+          <span className="text-teal-600 font-bold text-xs">Med</span>
+          <span className="text-teal-500 font-bold text-xs">Flow</span>
         </div>
-        <div style={styles.headerCenter}>
-          <h1 style={styles.headerTitle}>Triage Dashboard</h1>
-          <p style={styles.headerSubtitle}>Manage patients in the ER</p>
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold">Triage Dashboard</h1>
+          <p className="text-sm text-teal-100 mt-0.5">Manage patients in the ER</p>
         </div>
-        <button style={styles.menuButton}>
+        <button className="text-white">
           <Menu className="w-6 h-6" />
         </button>
       </header>
 
       {/* Main Content */}
-      <main style={styles.main}>
-        {/* Top Bar with Search and Add Button */}
-        <div style={styles.topBar}>
-          <div style={styles.searchWrapper}>
+      <main className="p-6">
+        {/* Top Bar */}
+        <div className="flex justify-end items-center gap-4 mb-6">
+          <div className="relative w-64">
             <Input
               placeholder="Search Patients..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pr-10"
             />
-            <Search style={styles.searchIcon} className="w-4 h-4" />
+            <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
           <Button 
             onClick={handleAddPatient}
@@ -342,15 +191,17 @@ export default function NurseDashboard() {
         </div>
 
         {/* Two Column Layout */}
-        <div style={styles.columnsContainer}>
+        <div className="grid grid-cols-2 gap-6">
           {/* Unscheduled Column */}
-          <div style={styles.column}>
-            <div style={styles.columnHeader}>
+          <div>
+            <div className="flex justify-between items-center mb-4 p-3 px-4 bg-white rounded-lg shadow-sm">
               <div>
-                <div style={styles.columnTitle}>unscheduled</div>
-                <div style={styles.columnSubtitle}>Waiting list</div>
+                <div className="text-base font-semibold text-gray-900">unscheduled</div>
+                <div className="text-xs text-gray-500 mt-0.5">Waiting list</div>
               </div>
-              <div style={styles.countBadge}>{unscheduledPatients.length}</div>
+              <div className="bg-teal-700 text-white rounded-lg px-3.5 py-1.5 text-base font-semibold">
+                {unscheduledPatients.length}
+              </div>
             </div>
             
             {/* Patient Cards */}
@@ -365,18 +216,20 @@ export default function NurseDashboard() {
           </div>
 
           {/* Scheduled Column */}
-          <div style={styles.column}>
-            <div style={styles.columnHeader}>
+          <div>
+            <div className="flex justify-between items-center mb-4 p-3 px-4 bg-white rounded-lg shadow-sm">
               <div>
-                <div style={styles.columnTitle}>scheduled</div>
-                <div style={styles.columnSubtitle}>Triaged list</div>
+                <div className="text-base font-semibold text-gray-900">scheduled</div>
+                <div className="text-xs text-gray-500 mt-0.5">Triaged list</div>
               </div>
-              <div style={styles.countBadge}>{scheduledPatients.length}</div>
+              <div className="bg-teal-700 text-white rounded-lg px-3.5 py-1.5 text-base font-semibold">
+                {scheduledPatients.length}
+              </div>
             </div>
             
-            {/* Drop Zone */}
+            {/* Drop Zone or Patient Cards */}
             {scheduledPatients.length === 0 ? (
-              <div style={styles.dropZone}>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center text-gray-400 bg-white min-h-52 flex items-center justify-center">
                 Drag patients here for Triage
               </div>
             ) : (
