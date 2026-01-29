@@ -43,7 +43,7 @@ export function Header({ title, subtitle, showMenu = true, className = "" }) {
           </div>
 
           {showMenu && (
-            <button>
+            <button className="cursor-pointer">
               <Menu className="w-11 h-8 text-[#FFFAFA]" />
             </button>
           )}

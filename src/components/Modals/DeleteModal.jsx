@@ -22,7 +22,7 @@ export function DeleteModal({
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[400px] p-6 !rounded-3xl gap-0 overflow-hidden bg-white border-0 shadow-2xl">
+      <DialogContent className="sm:max-w-[400px] p-6 rounded-3xl! gap-0 overflow-hidden bg-white border-0 shadow-2xl">
         <div className="flex flex-col items-center text-center">
           {/* Icon Circle */}
           <div className="w-20 h-20 bg-gray-900 rounded-full flex items-center justify-center mb-6 shadow-sm">
@@ -43,7 +43,7 @@ export function DeleteModal({
               variant="outline"
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 rounded-full border-gray-200 bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold h-11 border-0"
+              className="flex-1 rounded-full border-gray-200 bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold h-11 border-0 cursor-pointer"
             >
               Cancel
             </Button>
@@ -51,7 +51,7 @@ export function DeleteModal({
               variant="destructive"
               onClick={onConfirm}
               disabled={isLoading}
-              className="flex-1 rounded-full bg-red-600 hover:bg-red-700 text-white font-semibold h-11"
+              className="flex-1 rounded-full bg-red-600 hover:bg-red-700 text-white font-semibold h-11 cursor-pointer"
             >
               {isLoading ? "Deleting..." : "Delete"}
             </Button>

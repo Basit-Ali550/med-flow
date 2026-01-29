@@ -234,7 +234,7 @@ export default function NurseDashboard() {
               onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button onClick={handleAddPatient} className="rounded-full bg-teal-600 hover:bg-teal-700 px-6 shadow-md shadow-teal-600/20">
+          <Button onClick={handleAddPatient} className="rounded-full bg-teal-600 hover:bg-teal-700 px-6 shadow-md shadow-teal-600/20 cursor-pointer">
             <Plus className="w-4 h-4 mr-2" /> Add Patient
           </Button>
         </div>

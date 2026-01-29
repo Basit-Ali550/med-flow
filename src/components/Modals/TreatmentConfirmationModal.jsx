@@ -44,13 +44,13 @@ export function TreatmentConfirmationModal({
           <Button
             variant="outline"
             onClick={onClose}
-            className="w-32 rounded-full border-gray-200 hover:bg-gray-50 text-gray-700 h-10"
+            className="w-32 rounded-full border-gray-200 hover:bg-gray-50 text-gray-700 h-10 cursor-pointer"
           >
             Cancel
           </Button>
           <Button
             onClick={onConfirm}
-            className="w-32 rounded-full bg-teal-600 hover:bg-teal-700 text-white h-10 shadow-sm"
+            className="w-32 rounded-full bg-teal-600 hover:bg-teal-700 text-white h-10 shadow-sm cursor-pointer"
           >
             Confirm
           </Button>

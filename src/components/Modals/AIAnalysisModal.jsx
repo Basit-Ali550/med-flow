@@ -111,7 +111,7 @@ export function AIAnalysisModal({ isOpen, onClose, patient }) {
             </h2>
             <button
               onClick={onClose}
-              className="text-teal-100 hover:text-white transition-colors"
+              className="text-teal-100 hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-6 h-6" />
             </button>
@@ -254,7 +254,7 @@ export function AIAnalysisModal({ isOpen, onClose, patient }) {
               <div className="flex justify-end pt-2">
                 <Button
                   onClick={onClose}
-                  className="bg-teal-600 hover:bg-teal-700 text-white rounded-full px-8"
+                  className="bg-teal-600 hover:bg-teal-700 text-white rounded-full px-8 cursor-pointer"
                 >
                   Close
                 </Button>
