@@ -61,24 +61,7 @@ export default function EditPatient() {
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
-      // Reconstitute the structure expected by API (nested vitalSigns)
-      // Note: The API likely handles partial updates, but we'll send the structure clearly.
-      // Based on previous conversations, the backend likely expects vitalSigns object or flattened.
-      // Checking PatientForm usage in AddPatient: `JSON.stringify(values)`.
-      // The API endpoint for ADD handles the flat structure or nested?
-      // Let's check API add logic... "If heartRate, vitalSigns.heartRate = ..."
-      // So the API handles flat fields being converted to nested.
-      // BUT for UPDATE (PUT/PATCH), usually it expects the schema shape.
-      // I'll check /api/patients/[id]/route.js (it was edited earlier).
-      // Assuming it handles similar logic or direct object.
-      // To be safe, I'll send the flat structure if the API supports it, or nested if I can verify.
-      // For now, I'll send values as-is (flat), and if API fails, I'll fix it.
-      // Wait, AddPatient sends flat values. Edit should be similar.
-      
-      // Actually, standardizing: sending values as is.
-      // If the API /api/patients/[id] doesn't extract heartRate etc from body, I should nest them.
-      // Let's assume I need to nest them to be safe/clean for the Update endpoint.
-      
+    
       const payload = {
         ...values,
         vitalSigns: {
