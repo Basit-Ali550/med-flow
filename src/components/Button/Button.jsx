@@ -2,27 +2,47 @@
 
 import React from "react";
 
-const Button = ({
-  children,
-  onClick,
-  variant = "primary",
-  className = "",
-  icon,
-}) => {
-  const variants = {
-    primary:
-      "bg-teal-600 hover:bg-teal-700 text-white shadow-lg hover:shadow-xl",
-    secondary: "bg-gray-100 hover:bg-gray-200 text-gray-700",
-    danger: "bg-red-500 hover:bg-red-600 text-white",
-    ghost: "hover:bg-gray-100 text-gray-600",
+const Button = ({ children, onClick, variant = "primary", icon }) => {
+  const baseStyle = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "12px 20px",
+    borderRadius: "8px",
+    fontWeight: "500",
+    fontSize: "16px",
+    border: "none",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
   };
 
+  const variants = {
+    primary: {
+      backgroundColor: "var(--color-primary)",
+      color: "var(--color-text-white)",
+      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+    },
+    secondary: {
+      backgroundColor: "var(--color-border-light)",
+      color: "var(--color-text-secondary)",
+    },
+    danger: {
+      backgroundColor: "var(--color-delete-hover)",
+      color: "var(--color-text-white)",
+    },
+    ghost: {
+      background: "transparent",
+      color: "var(--color-text-secondary)",
+    },
+  };
+
+  const style = { ...baseStyle, ...variants[variant] };
+
   return (
-    <button
-      onClick={onClick}
-      className={`inline-flex items-center gap-2 px-5 py-3 rounded-lg font-medium transition-all duration-200 ${variants[variant]} ${className}`}
-    >
-      {icon && <span>{icon}</span>}
+    <button onClick={onClick} style={style}>
+      {icon && (
+        <span style={{ display: "flex", alignItems: "center" }}>{icon}</span>
+      )}
       {children}
     </button>
   );

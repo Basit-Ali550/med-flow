@@ -3,33 +3,90 @@
 import React from "react";
 
 const Header = () => {
+  const styles = {
+    header: {
+      backgroundColor: "var(--color-primary)",
+      color: "var(--color-text-white)",
+      padding: "16px 24px",
+    },
+    container: {
+      maxWidth: "1280px",
+      margin: "0 auto",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    logoWrapper: {
+      display: "flex",
+      alignItems: "center",
+    },
+    logo: {
+      backgroundColor: "var(--color-bg-white)",
+      borderRadius: "9999px",
+      padding: "8px 12px",
+      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+      display: "flex",
+      alignItems: "center",
+      gap: "2px",
+    },
+    logoMed: {
+      color: "var(--color-primary)",
+      fontWeight: "700",
+      fontSize: "14px",
+    },
+    logoFlow: {
+      color: "var(--color-primary-light)",
+      fontWeight: "700",
+      fontSize: "14px",
+    },
+    titleWrapper: {
+      textAlign: "center",
+    },
+    title: {
+      fontSize: "28px",
+      fontWeight: "600",
+      letterSpacing: "0.025em",
+    },
+    subtitle: {
+      color: "var(--color-primary-100)",
+      fontSize: "14px",
+      marginTop: "4px",
+    },
+    menuButton: {
+      padding: "8px",
+      background: "transparent",
+      border: "none",
+      borderRadius: "8px",
+      cursor: "pointer",
+      color: "var(--color-text-white)",
+    },
+    menuIcon: {
+      width: "32px",
+      height: "32px",
+    },
+  };
+
   return (
-    <header className="bg-teal-600 text-white py-4 px-6">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <header style={styles.header}>
+      <div style={styles.container}>
         {/* Logo */}
-        <div className="flex items-center">
-          <div className="bg-white rounded-full p-2 shadow-md">
-            <div className="flex items-center gap-1">
-              <span className="text-teal-600 font-bold text-sm">Med</span>
-              <span className="text-teal-400 font-bold text-sm">Flow</span>
-            </div>
+        <div style={styles.logoWrapper}>
+          <div style={styles.logo}>
+            <span style={styles.logoMed}>Med</span>
+            <span style={styles.logoFlow}>Flow</span>
           </div>
         </div>
 
         {/* Title */}
-        <div className="text-center">
-          <h1 className="text-2xl md:text-3xl font-semibold tracking-wide">
-            Triage Dashboard
-          </h1>
-          <p className="text-teal-100 text-sm mt-1">
-            Manage patients in the ER
-          </p>
+        <div style={styles.titleWrapper}>
+          <h1 style={styles.title}>Triage Dashboard</h1>
+          <p style={styles.subtitle}>Manage patients in the ER</p>
         </div>
 
         {/* Menu Icon */}
-        <button className="p-2 hover:bg-teal-700 rounded-lg transition-colors">
+        <button style={styles.menuButton}>
           <svg
-            className="w-8 h-8"
+            style={styles.menuIcon}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

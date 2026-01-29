@@ -14,49 +14,65 @@ export default function Home() {
   const [unscheduledPatients, setUnscheduledPatients] = useState(initialPatients);
   const [scheduledPatients, setScheduledPatients] = useState(initialScheduledPatients);
 
+  const styles = {
+    container: {
+      minHeight: "100vh",
+      backgroundColor: "var(--color-bg-primary)",
+    },
+    main: {
+      maxWidth: "1024px",
+      margin: "0 auto",
+      padding: "32px 16px",
+    },
+    buttonWrapper: {
+      display: "flex",
+      justifyContent: "flex-end",
+      marginBottom: "24px",
+    },
+    plusIcon: {
+      width: "20px",
+      height: "20px",
+    },
+    section: {
+      marginBottom: "40px",
+    },
+  };
+
   const handleAddPatient = () => {
-    // TODO: Open add patient modal
     console.log("Add patient clicked");
   };
 
   const handleEditPatient = (patient) => {
-    // TODO: Open edit patient modal
     console.log("Edit patient:", patient);
   };
 
   const handleDeletePatient = (patient) => {
-    // TODO: Confirm and delete patient
     console.log("Delete patient:", patient);
-    setUnscheduledPatients((prev) =>
-      prev.filter((p) => p.id !== patient.id)
-    );
-    setScheduledPatients((prev) =>
-      prev.filter((p) => p.id !== patient.id)
-    );
+    setUnscheduledPatients((prev) => prev.filter((p) => p.id !== patient.id));
+    setScheduledPatients((prev) => prev.filter((p) => p.id !== patient.id));
   };
 
   const handleDropToTriage = () => {
-    // TODO: Handle drag and drop logic
     console.log("Patient dropped to triage");
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div style={styles.container}>
       <Header />
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main style={styles.main}>
         {/* Add Patient Button */}
-        <div className="flex justify-end mb-6">
+        <div style={styles.buttonWrapper}>
           <Button
             onClick={handleAddPatient}
-            icon={<PlusIcon className="w-5 h-5" />}
+            icon={<PlusIcon style={styles.plusIcon} />}
           >
             Add Patient
           </Button>
         </div>
 
         {/* Unscheduled Patients */}
-        <div className="mb-10">
+        <div style={styles.section}>
           <PatientList
             patients={unscheduledPatients}
             title="unscheduled patients"
@@ -66,7 +82,7 @@ export default function Home() {
         </div>
 
         {/* Scheduled Patients - Drop Zone */}
-        <div>
+        <div style={styles.section}>
           <DropZone
             patients={scheduledPatients}
             title="scheduled patients"

@@ -3,22 +3,48 @@
 import React from "react";
 
 const Badge = ({ children, variant = "default", className = "" }) => {
-  const variants = {
-    default: "bg-gray-100 text-gray-700",
-    pain: "bg-red-500 text-white",
-    waitTime: "bg-yellow-300 text-gray-800",
-    count: "bg-teal-100 text-teal-700",
-    vitalsProvided: "text-teal-600 border border-teal-600 bg-white",
-    missingVitals: "text-red-500 border border-red-500 bg-white",
+  const baseStyle = {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "4px 12px",
+    borderRadius: "6px",
+    fontSize: "14px",
+    fontWeight: "500",
+    gap: "4px",
   };
 
-  return (
-    <span
-      className={`inline-flex items-center px-3 py-1 rounded-md text-sm font-medium ${variants[variant]} ${className}`}
-    >
-      {children}
-    </span>
-  );
+  const variants = {
+    default: {
+      backgroundColor: "var(--color-border-light)",
+      color: "var(--color-text-secondary)",
+    },
+    pain: {
+      backgroundColor: "var(--color-pain-bg)",
+      color: "var(--color-pain-text)",
+    },
+    waitTime: {
+      backgroundColor: "var(--color-wait-bg)",
+      color: "var(--color-wait-text)",
+    },
+    count: {
+      backgroundColor: "var(--color-badge-count-bg)",
+      color: "var(--color-badge-count-text)",
+    },
+    vitalsProvided: {
+      color: "var(--color-vitals-provided)",
+      border: "1px solid var(--color-vitals-provided)",
+      backgroundColor: "var(--color-bg-white)",
+    },
+    missingVitals: {
+      color: "var(--color-vitals-missing)",
+      border: "1px solid var(--color-vitals-missing)",
+      backgroundColor: "var(--color-bg-white)",
+    },
+  };
+
+  const style = { ...baseStyle, ...variants[variant] };
+
+  return <span style={style}>{children}</span>;
 };
 
 export default Badge;

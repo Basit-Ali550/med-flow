@@ -1,22 +1,44 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import SectionHeader from "../SectionHeader/SectionHeader";
 import PatientCard from "../PatientCard/PatientCard";
 
 const DropZone = ({ patients = [], title, onDrop, onEdit, onDelete }) => {
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.currentTarget.classList.add("border-teal-400", "bg-teal-50");
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const styles = {
+    list: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "16px",
+    },
+    dropZone: {
+      border: `2px dashed ${isDragOver ? "var(--color-primary-light)" : "var(--color-border-dashed)"}`,
+      borderRadius: "12px",
+      padding: "48px 16px",
+      transition: "all 0.2s ease",
+      backgroundColor: isDragOver ? "var(--color-primary-50)" : "transparent",
+    },
+    dropText: {
+      textAlign: "center",
+      color: "var(--color-text-muted)",
+      fontSize: "18px",
+    },
   };
 
-  const handleDragLeave = (e) => {
-    e.currentTarget.classList.remove("border-teal-400", "bg-teal-50");
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
-    e.currentTarget.classList.remove("border-teal-400", "bg-teal-50");
+    setIsDragOver(false);
     onDrop?.();
   };
 
@@ -25,7 +47,7 @@ const DropZone = ({ patients = [], title, onDrop, onEdit, onDelete }) => {
       <SectionHeader count={patients.length} title={title} />
 
       {patients.length > 0 ? (
-        <div className="space-y-4">
+        <div style={styles.list}>
           {patients.map((patient) => (
             <PatientCard
               key={patient.id}
@@ -40,11 +62,9 @@ const DropZone = ({ patients = [], title, onDrop, onEdit, onDelete }) => {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className="border-2 border-dashed border-gray-300 rounded-xl p-12 transition-all duration-200"
+          style={styles.dropZone}
         >
-          <p className="text-center text-gray-400 text-lg">
-            Drag patients here for Triage
-          </p>
+          <p style={styles.dropText}>Drag patients here for Triage</p>
         </div>
       )}
     </div>

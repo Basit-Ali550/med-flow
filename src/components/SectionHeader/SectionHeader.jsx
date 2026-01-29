@@ -3,12 +3,36 @@
 import React from "react";
 
 const SectionHeader = ({ count, title }) => {
+  const styles = {
+    wrapper: {
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      marginBottom: "16px",
+    },
+    count: {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "32px",
+      height: "32px",
+      borderRadius: "8px",
+      backgroundColor: "var(--color-badge-count-bg)",
+      color: "var(--color-badge-count-text)",
+      fontWeight: "600",
+      fontSize: "14px",
+    },
+    title: {
+      color: "var(--color-text-secondary)",
+      fontWeight: "500",
+      fontSize: "16px",
+    },
+  };
+
   return (
-    <div className="flex items-center gap-3 mb-4">
-      <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-teal-50 text-teal-700 font-semibold text-sm">
-        {count}
-      </span>
-      <h2 className="text-gray-600 font-medium">{title}</h2>
+    <div style={styles.wrapper}>
+      <span style={styles.count}>{count}</span>
+      <h2 style={styles.title}>{title}</h2>
     </div>
   );
 };

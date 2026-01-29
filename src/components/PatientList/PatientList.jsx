@@ -5,10 +5,18 @@ import PatientCard from "../PatientCard/PatientCard";
 import SectionHeader from "../SectionHeader/SectionHeader";
 
 const PatientList = ({ patients, title, onEdit, onDelete }) => {
+  const styles = {
+    list: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "16px",
+    },
+  };
+
   return (
     <div>
       <SectionHeader count={patients.length} title={title} />
-      <div className="space-y-4">
+      <div style={styles.list}>
         {patients.map((patient) => (
           <PatientCard
             key={patient.id}
