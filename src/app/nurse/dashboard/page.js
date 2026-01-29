@@ -14,6 +14,7 @@ import {
   useDroppable,
 } from "@dnd-kit/core";
 import { DeleteModal } from "@/components/Modals/DeleteModal";
+import { AIAnalysisModal } from "@/components/Modals/AIAnalysisModal";
 import {
   SortableContext,
   sortableKeyboardCoordinates,
@@ -75,7 +76,7 @@ function SortablePatientCard({ patient, onEdit, onDelete }) {
         patient={patient} 
         onEdit={(p) => onEdit(p)} 
         onDelete={(p) => onDelete(p)} 
-        // Pass drag props for the whole card
+        // ai drag props for the whole card
         dragHandleProps={{ ...attributes, ...listeners }}
       />
     </div>
@@ -194,6 +195,12 @@ export default function NurseDashboard() {
     patient: null,
   });
 
+  // AI Modal State
+  const [aiModal, setAiModal] = useState({
+    isOpen: false,
+    patient: null,
+  });
+
   // DnD Sensors
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -251,17 +258,32 @@ export default function NurseDashboard() {
 
     const previousItems = [...items];
     let newStatus = null;
+    let shouldTriggerAI = false;
 
     if (draggedItem.status === 'Waiting' && isOverScheduled) {
        newStatus = 'Triaged';
+       shouldTriggerAI = true; // Trigger AI only for Left -> Right
     } else if (draggedItem.status !== 'Waiting' && isOverUnscheduled) {
        newStatus = 'Waiting';
     }
 
     if (newStatus && newStatus !== draggedItem.status) {
+      // Optimistic Update
       setItems(prev => prev.map(p => 
         p._id === patientId ? { ...p, status: newStatus } : p
       ));
+
+      // Trigger AI Modal immediately for better UX
+      if (shouldTriggerAI) {
+        // Calculate wait time for the modal display
+        const waitTime = draggedItem.registeredAt ? 
+          Math.floor((Date.now() - new Date(draggedItem.registeredAt).getTime()) / 60000) : 0;
+          
+        setAiModal({
+          isOpen: true,
+          patient: { ...draggedItem, waitTime }, // Pass calculated stat
+        });
+      }
 
       try {
         await fetch(`/api/patients/${patientId}`, {
@@ -305,7 +327,7 @@ export default function NurseDashboard() {
   };
 
   const handleEdit = (patient) => {
-    toast.info("Edit functionality coming soon");
+    router.push(`/nurse/edit-patient/${patient._id}`);
   };
 
   return (
@@ -319,6 +341,13 @@ export default function NurseDashboard() {
         onConfirm={verifyDelete}
         title="Delete Patient?"
         description="Are you sure you want to delete this patient? The patient will be removed from the waitlist. This action cannot be undone."
+      />
+
+      {/* AI Analysis Modal */}
+      <AIAnalysisModal 
+        isOpen={aiModal.isOpen}
+        onClose={() => setAiModal({ isOpen: false, patient: null })}
+        patient={aiModal.patient}
       />
 
       {/* Header */}
