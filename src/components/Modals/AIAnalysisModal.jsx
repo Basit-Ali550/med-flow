@@ -11,18 +11,7 @@ export function AIAnalysisModal({ isOpen, onClose, patient }) {
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (isOpen && patient) {
-      generateAnalysis();
-    } else {
-      // Reset state when closed
-      setLoading(true);
-      setAnalysis(null);
-      setError(null);
-    }
-  }, [isOpen, patient]);
-
-  const generateAnalysis = async () => {
+  const generateAnalysis = React.useCallback(async () => {
     const apiKey = process.env.NEXT_PUBLIC_VITE_OPENAI_API_KEY;
 
     if (!apiKey) {
@@ -93,7 +82,18 @@ export function AIAnalysisModal({ isOpen, onClose, patient }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [patient]);
+
+  useEffect(() => {
+    if (isOpen && patient) {
+      generateAnalysis();
+    } else {
+      // Reset state when closed
+      setLoading(true);
+      setAnalysis(null);
+      setError(null);
+    }
+  }, [isOpen, patient, generateAnalysis]);
 
   if (!isOpen) return null;
 
