@@ -56,15 +56,27 @@ export default function AddPatient() {
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
-      // TODO: API call to add patient
-      console.log("Patient data:", values);
-      toast.success("Patient added successfully!");
+      const response = await fetch('/api/patients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to add patient');
+      }
+
+      toast.success(data.message || "Patient added successfully!");
       
       setTimeout(() => {
         router.push("/nurse/dashboard");
       }, 1500);
     } catch (error) {
-      toast.error("Failed to add patient. Please try again.");
+      toast.error(error.message || "Failed to add patient. Please try again.");
     } finally {
       setSubmitting(false);
     }

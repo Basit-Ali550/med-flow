@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast, Toaster } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -15,39 +15,42 @@ import {
   Pencil, 
   Trash2, 
   CheckCircle, 
-  AlertCircle 
+  AlertCircle,
+  Loader2,
+  RefreshCw
 } from "lucide-react";
 
-// Sample patient data
-const samplePatients = [
-  {
-    id: 1,
-    name: "John Doe",
-    age: 50,
-    gender: "Male",
-    symptoms: "Sudden One-Sided Weakness, Slurred Speech",
-    painLevel: 2,
-    waitTime: 30,
-    vitalsProvided: true,
-  },
-  {
-    id: 2,
-    name: "Elena Petrova",
-    age: 36,
-    gender: "Female",
-    symptoms: "Severe abdominal pain",
-    painLevel: 5,
-    waitTime: 25,
-    vitalsProvided: false,
-  },
-];
-
 // Patient Card Component
-const PatientCard = ({ patient, onEdit, onDelete }) => {
+const PatientCard = ({ patient, onEdit, onDelete, isDeleting }) => {
+  // Calculate age from dateOfBirth
+  const calculateAge = (dob) => {
+    if (!dob) return 'N/A';
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  // Calculate wait time from registeredAt
+  const calculateWaitTime = (registeredAt) => {
+    if (!registeredAt) return 0;
+    const now = new Date();
+    const registered = new Date(registeredAt);
+    return Math.floor((now - registered) / (1000 * 60)); // minutes
+  };
+
+  const age = patient.age || calculateAge(patient.dateOfBirth);
+  const waitTime = calculateWaitTime(patient.registeredAt);
+  const vitalsProvided = !!(patient.vitalSigns && Object.keys(patient.vitalSigns).length > 0);
+
   return (
     <Card 
       className={`mb-3 p-4 bg-white border-l-4 ${
-        patient.vitalsProvided ? "border-l-yellow-300" : "border-l-red-500"
+        vitalsProvided ? "border-l-yellow-300" : "border-l-red-500"
       }`}
     >
       <div className="flex justify-between items-start mb-2">
@@ -58,27 +61,37 @@ const PatientCard = ({ patient, onEdit, onDelete }) => {
             {/* Name Row */}
             <div className="flex items-center gap-2">
               <span className="font-semibold text-base text-gray-900">
-                {patient.name}
+                {patient.fullName}
               </span>
               <span className="text-sm text-gray-500">
-                ({patient.age}y, {patient.gender})
+                ({age}y, {patient.gender || 'N/A'})
               </span>
             </div>
             
             {/* Symptoms */}
             <div className="text-sm text-gray-500 mt-1 flex items-start gap-2">
               <span className="font-medium">Symptoms:</span>
-              <span>{patient.symptoms}</span>
+              <span className="line-clamp-1">{patient.symptoms}</span>
             </div>
             
             {/* Badges */}
-            <div className="flex gap-2 mt-3">
+            <div className="flex gap-2 mt-3 flex-wrap">
               <Badge className="bg-red-500 text-white rounded-md px-2 py-1 text-xs">
-                Pain: {patient.painLevel}/10
+                Pain: {patient.painLevel || 0}/10
               </Badge>
               <Badge className="bg-yellow-300 text-gray-800 rounded-md px-2 py-1 text-xs">
-                Wait time: {patient.waitTime} minutes
+                Wait time: {waitTime} minutes
               </Badge>
+              {patient.triageLevel && patient.triageLevel !== 'Pending' && (
+                <Badge className={`rounded-md px-2 py-1 text-xs ${
+                  patient.triageLevel === 'Critical' ? 'bg-red-600 text-white' :
+                  patient.triageLevel === 'Urgent' ? 'bg-orange-500 text-white' :
+                  patient.triageLevel === 'Semi-Urgent' ? 'bg-yellow-500 text-gray-900' :
+                  'bg-green-500 text-white'
+                }`}>
+                  {patient.triageLevel}
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -86,7 +99,7 @@ const PatientCard = ({ patient, onEdit, onDelete }) => {
         {/* Right Section */}
         <div className="flex flex-col items-end gap-3">
           {/* Vitals Status */}
-          {patient.vitalsProvided ? (
+          {vitalsProvided ? (
             <Badge 
               variant="outline" 
               className="text-teal-600 border-teal-600 gap-1 rounded-md"
@@ -118,9 +131,14 @@ const PatientCard = ({ patient, onEdit, onDelete }) => {
               variant="ghost"
               size="icon-sm"
               onClick={() => onDelete?.(patient)}
+              disabled={isDeleting}
               className="hover:text-red-600 hover:bg-red-50"
             >
-              <Trash2 className="w-4 h-4" />
+              {isDeleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
             </Button>
           </div>
         </div>
@@ -131,22 +149,87 @@ const PatientCard = ({ patient, onEdit, onDelete }) => {
 
 export default function NurseDashboard() {
   const router = useRouter();
-  const [unscheduledPatients, setUnscheduledPatients] = useState(samplePatients);
-  const [scheduledPatients, setScheduledPatients] = useState([]);
+  const [patients, setPatients] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Fetch patients from API
+  const fetchPatients = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/patients?limit=50&sortBy=registeredAt&sortOrder=desc');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch patients');
+      }
+      
+      setPatients(data.data?.patients || []);
+    } catch (error) {
+      console.error('Error fetching patients:', error);
+      toast.error(error.message || 'Failed to load patients');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPatients();
+  }, []);
+
+  // Filter patients based on status
+  const unscheduledPatients = patients.filter(p => 
+    p.status === 'Waiting' && (p.triageLevel === 'Pending' || !p.triageLevel)
+  );
+  const scheduledPatients = patients.filter(p => 
+    p.status === 'Waiting' && p.triageLevel && p.triageLevel !== 'Pending'
+  );
+
+  // Filter by search query
+  const filterBySearch = (patientList) => {
+    if (!searchQuery.trim()) return patientList;
+    const query = searchQuery.toLowerCase();
+    return patientList.filter(p => 
+      p.fullName?.toLowerCase().includes(query) ||
+      p.symptoms?.toLowerCase().includes(query)
+    );
+  };
 
   const handleAddPatient = () => {
     router.push("/nurse/add-patient");
   };
 
   const handleEditPatient = (patient) => {
-    toast.success("Patient successfully edited.");
+    // TODO: Implement edit modal or redirect to edit page
+    toast.info(`Editing patient: ${patient.fullName}`);
+    // router.push(`/nurse/edit-patient/${patient._id}`);
   };
 
-  const handleDeletePatient = (patient) => {
-    setUnscheduledPatients((prev) => prev.filter((p) => p.id !== patient.id));
-    setScheduledPatients((prev) => prev.filter((p) => p.id !== patient.id));
-    toast.success("Patient deleted successfully.");
+  const handleDeletePatient = async (patient) => {
+    if (!confirm(`Are you sure you want to delete ${patient.fullName}?`)) {
+      return;
+    }
+
+    try {
+      setDeletingId(patient._id);
+      const response = await fetch(`/api/patients/${patient._id}`, {
+        method: 'DELETE',
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete patient');
+      }
+      
+      setPatients(prev => prev.filter(p => p._id !== patient._id));
+      toast.success(data.message || "Patient deleted successfully.");
+    } catch (error) {
+      toast.error(error.message || "Failed to delete patient.");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -172,6 +255,16 @@ export default function NurseDashboard() {
       <main className="p-6">
         {/* Top Bar */}
         <div className="flex justify-end items-center gap-4 mb-6">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchPatients}
+            disabled={isLoading}
+            className="gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
           <div className="relative w-64">
             <Input
               placeholder="Search Patients..."
@@ -190,61 +283,78 @@ export default function NurseDashboard() {
           </Button>
         </div>
 
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-2 gap-6">
-          {/* Unscheduled Column */}
-          <div>
-            <div className="flex justify-between items-center mb-4 p-3 px-4 bg-white rounded-lg shadow-sm">
-              <div>
-                <div className="text-base font-semibold text-gray-900">unscheduled</div>
-                <div className="text-xs text-gray-500 mt-0.5">Waiting list</div>
-              </div>
-              <div className="bg-teal-700 text-white rounded-lg px-3.5 py-1.5 text-base font-semibold">
-                {unscheduledPatients.length}
-              </div>
-            </div>
-            
-            {/* Patient Cards */}
-            {unscheduledPatients.map((patient) => (
-              <PatientCard
-                key={patient.id}
-                patient={patient}
-                onEdit={handleEditPatient}
-                onDelete={handleDeletePatient}
-              />
-            ))}
+        {/* Loading State */}
+        {isLoading && patients.length === 0 ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+            <span className="ml-2 text-gray-600">Loading patients...</span>
           </div>
+        ) : (
+          /* Two Column Layout */
+          <div className="grid grid-cols-2 gap-6">
+            {/* Unscheduled Column */}
+            <div>
+              <div className="flex justify-between items-center mb-4 p-3 px-4 bg-white rounded-lg shadow-sm">
+                <div>
+                  <div className="text-base font-semibold text-gray-900">unscheduled</div>
+                  <div className="text-xs text-gray-500 mt-0.5">Waiting list</div>
+                </div>
+                <div className="bg-teal-700 text-white rounded-lg px-3.5 py-1.5 text-base font-semibold">
+                  {filterBySearch(unscheduledPatients).length}
+                </div>
+              </div>
+              
+              {/* Patient Cards */}
+              {filterBySearch(unscheduledPatients).length === 0 ? (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-400 bg-white">
+                  No unscheduled patients
+                </div>
+              ) : (
+                filterBySearch(unscheduledPatients).map((patient) => (
+                  <PatientCard
+                    key={patient._id}
+                    patient={patient}
+                    onEdit={handleEditPatient}
+                    onDelete={handleDeletePatient}
+                    isDeleting={deletingId === patient._id}
+                  />
+                ))
+              )}
+            </div>
 
-          {/* Scheduled Column */}
-          <div>
-            <div className="flex justify-between items-center mb-4 p-3 px-4 bg-white rounded-lg shadow-sm">
-              <div>
-                <div className="text-base font-semibold text-gray-900">scheduled</div>
-                <div className="text-xs text-gray-500 mt-0.5">Triaged list</div>
+            {/* Scheduled Column */}
+            <div>
+              <div className="flex justify-between items-center mb-4 p-3 px-4 bg-white rounded-lg shadow-sm">
+                <div>
+                  <div className="text-base font-semibold text-gray-900">scheduled</div>
+                  <div className="text-xs text-gray-500 mt-0.5">Triaged list</div>
+                </div>
+                <div className="bg-teal-700 text-white rounded-lg px-3.5 py-1.5 text-base font-semibold">
+                  {filterBySearch(scheduledPatients).length}
+                </div>
               </div>
-              <div className="bg-teal-700 text-white rounded-lg px-3.5 py-1.5 text-base font-semibold">
-                {scheduledPatients.length}
-              </div>
+              
+              {/* Drop Zone or Patient Cards */}
+              {filterBySearch(scheduledPatients).length === 0 ? (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center text-gray-400 bg-white min-h-52 flex items-center justify-center">
+                  Drag patients here for Triage
+                </div>
+              ) : (
+                filterBySearch(scheduledPatients).map((patient) => (
+                  <PatientCard
+                    key={patient._id}
+                    patient={patient}
+                    onEdit={handleEditPatient}
+                    onDelete={handleDeletePatient}
+                    isDeleting={deletingId === patient._id}
+                  />
+                ))
+              )}
             </div>
-            
-            {/* Drop Zone or Patient Cards */}
-            {scheduledPatients.length === 0 ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center text-gray-400 bg-white min-h-52 flex items-center justify-center">
-                Drag patients here for Triage
-              </div>
-            ) : (
-              scheduledPatients.map((patient) => (
-                <PatientCard
-                  key={patient.id}
-                  patient={patient}
-                  onEdit={handleEditPatient}
-                  onDelete={handleDeletePatient}
-                />
-              ))
-            )}
           </div>
-        </div>
+        )}
       </main>
     </div>
   );
 }
+

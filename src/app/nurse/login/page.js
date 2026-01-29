@@ -26,20 +26,34 @@ export default function NurseLogin() {
     setIsLoading(true);
 
     try {
-      // TODO: API call to login
-      console.log("Login data:", formData);
-      
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      toast.success("Login successful!");
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      // Store token in localStorage for client-side access
+      if (data.data?.token) {
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('nurse', JSON.stringify(data.data.nurse));
+      }
+
+      toast.success(data.message || "Login successful!");
       
       // Redirect to dashboard
       setTimeout(() => {
         router.push("/nurse/dashboard");
       }, 1000);
     } catch (error) {
-      toast.error("Login failed. Please check your credentials.");
+      toast.error(error.message || "Login failed. Please check your credentials.");
     } finally {
       setIsLoading(false);
     }
