@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Nurse from '@/models/Nurse';
 import { authMiddleware, successResponse, errorResponse, unauthorizedResponse } from '@/lib/auth';

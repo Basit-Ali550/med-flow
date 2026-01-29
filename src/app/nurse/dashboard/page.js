@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 import {
   DndContext,
   KeyboardSensor,
@@ -34,11 +34,9 @@ import { DroppableContainer } from "@/components/Dashboard/DroppableContainer";
 // Hooks
 import { usePatients } from "@/hooks/usePatients";
 
-// --- Helpers ---
-const calculateCurrentWaitTime = (registeredAt) => {
-  if (!registeredAt) return 0;
-  return Math.floor((Date.now() - new Date(registeredAt).getTime()) / 60000);
-};
+// Helpers
+import { getWaitTimeMinutes } from "@/lib/utils";
+import { PATIENT_STATUS } from "@/lib/constants";
 
 export default function NurseDashboard() {
   const router = useRouter();
@@ -57,7 +55,6 @@ export default function NurseDashboard() {
   const [activeId, setActiveId] = useState(null);
   
   // --- Modal State Refactor ---
-  // Consolidated state for all modals (cleaner than multiple booleans)
   const [activeModal, setActiveModal] = useState({ 
     type: null, // 'DELETE' | 'AI' | 'TREATMENT'
     patient: null 
@@ -73,9 +70,9 @@ export default function NurseDashboard() {
   );
 
   // --- Filter Items ---
-  const unscheduledItems = items.filter(p => p.status === 'Waiting');
-  // Only show Triaged items in Scheduled column. 'In Progress' items are hidden.
-  const scheduledItems = items.filter(p => p.status === 'Triaged');
+  const unscheduledItems = items.filter(p => p.status === PATIENT_STATUS.WAITING);
+  // Only show Triaged items in Scheduled column
+  const scheduledItems = items.filter(p => p.status === PATIENT_STATUS.TRIAGED);
 
   const filteredUnscheduled = unscheduledItems.filter(p => 
     p.fullName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -111,13 +108,13 @@ export default function NurseDashboard() {
     let shouldTriggerAI = false;
 
     // Logic: Move Left -> Right (Unscheduled -> Scheduled)
-    if (draggedItem.status === 'Waiting' && isOverScheduled) {
-       newStatus = 'Triaged';
+    if (draggedItem.status === PATIENT_STATUS.WAITING && isOverScheduled) {
+       newStatus = PATIENT_STATUS.TRIAGED;
        shouldTriggerAI = true; 
     } 
     // Logic: Move Right -> Left (Scheduled -> Unscheduled)
-    else if (draggedItem.status !== 'Waiting' && isOverUnscheduled) {
-       newStatus = 'Waiting';
+    else if (draggedItem.status !== PATIENT_STATUS.WAITING && isOverUnscheduled) {
+       newStatus = PATIENT_STATUS.WAITING;
     }
 
     // If status changed, update state and API
@@ -129,7 +126,7 @@ export default function NurseDashboard() {
 
       // Trigger AI Modal
       if (shouldTriggerAI) {
-        const waitTime = calculateCurrentWaitTime(draggedItem.registeredAt);
+        const waitTime = getWaitTimeMinutes(draggedItem.registeredAt);
         // Note: We open modal with the *updated* local data context
         openModal('AI', { ...draggedItem, waitTime });
       }
@@ -137,7 +134,7 @@ export default function NurseDashboard() {
       // API Call
       const success = await updatePatientStatus(patientId, newStatus);
       if (success) {
-        toast.success(newStatus === 'Triaged' ? 'Moved to Scheduled' : 'Moved back to Unscheduled');
+        toast.success(newStatus === PATIENT_STATUS.TRIAGED ? 'Moved to Scheduled' : 'Moved back to Unscheduled');
       } else {
         setItems(previousItems); // Rollback on failure
       }
@@ -164,7 +161,7 @@ export default function NurseDashboard() {
 
   const handleCardClick = (patient) => {
     // Only open for Scheduled/Triaged patients
-    if (patient.status === 'Triaged') {
+    if (patient.status === PATIENT_STATUS.TRIAGED) {
       openModal('TREATMENT', patient);
     }
   };
@@ -176,13 +173,13 @@ export default function NurseDashboard() {
     // Optimistic Update: Update UI immediately
     const previousItems = [...items];
     setItems(prev => prev.map(p => 
-      p._id === patient._id ? { ...p, status: 'In Progress' } : p
+      p._id === patient._id ? { ...p, status: PATIENT_STATUS.IN_PROGRESS } : p
     ));
     
     closeModal();
 
     // API Call
-    const success = await updatePatientStatus(patient._id, 'In Progress');
+    const success = await updatePatientStatus(patient._id, PATIENT_STATUS.IN_PROGRESS);
     if (success) {
        toast.success("Patient sent to treatment room");
     } else {
@@ -194,7 +191,6 @@ export default function NurseDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Toaster position="top-center" richColors />
       
       {/* --- Unified Modals Section --- */}
       <DeleteModal 
@@ -208,7 +204,7 @@ export default function NurseDashboard() {
       <AIAnalysisModal 
         isOpen={activeModal.type === 'AI'}
         onClose={closeModal}
-        patient={activeModal.patient} // Passed dynamically
+        patient={activeModal.patient}
       />
 
       <TreatmentConfirmationModal
@@ -217,8 +213,6 @@ export default function NurseDashboard() {
         onConfirm={handleConfirmTreatment}
         patientName={activeModal.patient?.fullName}
       />
-
-      {/* Header provided by Layout */}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto p-8">

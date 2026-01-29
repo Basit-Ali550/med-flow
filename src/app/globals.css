@@ -2,51 +2,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ===== COLOR SYSTEM - SIRF COLORS YAHAN ===== */
 :root {
-  /* Primary Colors - Teal */
-  --color-primary: #0d9488;
-  --color-primary-light: #14b8a6;
-  --color-primary-dark: #0f766e;
-  --color-primary-50: #f0fdfa;
-  --color-primary-100: #ccfbf1;
-
-  /* Background Colors */
+  /* Background & Text Colors - used by body styles */
   --color-bg-primary: #f9fafb;
-  --color-bg-white: #ffffff;
-
-  /* Text Colors */
   --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-muted: #9ca3af;
-  --color-text-white: #ffffff;
 
-  /* Status Colors - Pain */
-  --color-pain-bg: #ef4444;
-  --color-pain-text: #ffffff;
-
-  /* Status Colors - Wait Time */
-  --color-wait-bg: #fde047;
-  --color-wait-text: #1f2937;
-
-  /* Status Colors - Vitals */
-  --color-vitals-provided: #0d9488;
-  --color-vitals-missing: #ef4444;
-
-  /* Border Colors */
-  --color-border: #e5e7eb;
-  --color-border-light: #f3f4f6;
-  --color-border-dashed: #d1d5db;
-
-  /* Action Hover Colors */
-  --color-edit-hover: #0d9488;
-  --color-edit-hover-bg: #f0fdfa;
-  --color-delete-hover: #ef4444;
-  --color-delete-hover-bg: #fef2f2;
-
-  /* Badge Count */
-  --color-badge-count-bg: #f0fdfa;
-  --color-badge-count-text: #0f766e;
+  /* Shadcn Theme Variables */
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);

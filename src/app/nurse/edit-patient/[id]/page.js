@@ -1,97 +1,63 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import PatientForm from "@/components/PatientForm/PatientForm";
 import { Loader2 } from "lucide-react";
+import { patientsApi } from "@/lib/api";
+
+/**
+ * Transform API patient data to flat form values
+ */
+function transformPatientToFormValues(patient) {
+  return {
+    fullName: patient.fullName || "",
+    dateOfBirth: patient.dateOfBirth 
+      ? new Date(patient.dateOfBirth).toISOString().split('T')[0] 
+      : "",
+    gender: patient.gender || "",
+    symptoms: patient.symptoms || "",
+    painLevel: patient.painLevel || 0,
+    allergies: patient.allergies || "",
+    medications: patient.medications || "",
+    chronicConditions: patient.chronicConditions || "",
+    heartRate: patient.vitalSigns?.heartRate || "",
+    bloodPressureSys: patient.vitalSigns?.bloodPressureSys || "",
+    bloodPressureDia: patient.vitalSigns?.bloodPressureDia || "",
+    temperature: patient.vitalSigns?.temperature || "",
+    o2Saturation: patient.vitalSigns?.o2Saturation || "",
+  };
+}
 
 export default function EditPatient() {
   const router = useRouter();
-  const params = useParams();
-  const { id } = params;
+  const { id } = useParams();
   
   const [loading, setLoading] = useState(true);
   const [initialValues, setInitialValues] = useState(null);
 
-  // Fetch patient data
-  useEffect(() => {
-    const fetchPatient = async () => {
-      try {
-        const response = await fetch(`/api/patients/${id}`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || "Failed to fetch patient");
-        }
-
-        const patient = data.data.patient;
-
-        // Transform API data to Formik (flat) structure
-        const formattedValues = {
-          fullName: patient.fullName || "",
-          dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : "",
-          gender: patient.gender || "",
-          symptoms: patient.symptoms || "",
-          painLevel: patient.painLevel || 0,
-          allergies: patient.allergies || "",
-          medications: patient.medications || "",
-          chronicConditions: patient.chronicConditions || "",
-          // Flatten Vitals
-          heartRate: patient.vitalSigns?.heartRate || "",
-          bloodPressureSys: patient.vitalSigns?.bloodPressureSys || "",
-          bloodPressureDia: patient.vitalSigns?.bloodPressureDia || "",
-          temperature: patient.vitalSigns?.temperature || "",
-          o2Saturation: patient.vitalSigns?.o2Saturation || "",
-        };
-
-        setInitialValues(formattedValues);
-      } catch (error) {
-        toast.error("Error loading patient data");
-        router.push("/nurse/dashboard");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (id) {
-      fetchPatient();
+  const fetchPatient = useCallback(async () => {
+    try {
+      const { data } = await patientsApi.getById(id);
+      setInitialValues(transformPatientToFormValues(data.patient));
+    } catch (error) {
+      toast.error(error.message || "Error loading patient data");
+      router.push("/nurse/dashboard");
+    } finally {
+      setLoading(false);
     }
   }, [id, router]);
 
+  useEffect(() => {
+    if (id) fetchPatient();
+  }, [id, fetchPatient]);
+
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
-    
-      const payload = {
-        ...values,
-        vitalSigns: {
-          heartRate: values.heartRate,
-          bloodPressureSys: values.bloodPressureSys,
-          bloodPressureDia: values.bloodPressureDia,
-          temperature: values.temperature,
-          o2Saturation: values.o2Saturation,
-        }
-      };
-
-      const response = await fetch(`/api/patients/${id}`, {
-        method: 'PUT', // or PATCH
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to update patient');
-      }
-
+      await patientsApi.update(id, values);
       toast.success("Patient updated successfully!");
-      
-      setTimeout(() => {
-        router.push("/nurse/dashboard");
-      }, 1000);
+      setTimeout(() => router.push("/nurse/dashboard"), 1000);
     } catch (error) {
       toast.error(error.message || "Update failed");
     } finally {
@@ -99,9 +65,7 @@ export default function EditPatient() {
     }
   };
 
-  const handleCancel = () => {
-    router.push("/nurse/dashboard");
-  };
+  const handleCancel = () => router.push("/nurse/dashboard");
 
   if (loading) {
     return (
@@ -113,11 +77,6 @@ export default function EditPatient() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Toaster position="top-center" richColors />
-
-      {/* Header provided by Layout */}
-
-      {/* Main Content */}
       <main className="max-w-4xl mx-auto py-8 px-6">
         {initialValues && (
           <PatientForm
@@ -132,3 +91,4 @@ export default function EditPatient() {
     </div>
   );
 }
+

@@ -1,5 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
+import { AppHeader } from "@/components/Header/AppHeader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,10 +19,6 @@ export const metadata = {
   keywords: ["medical", "triage", "dashboard", "ER", "patients", "healthcare"],
 };
 
-import { AppHeader } from "@/components/Header/AppHeader";
-
-// ...
-
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
@@ -29,7 +27,9 @@ export default function RootLayout({ children }) {
       >
         <AppHeader />
         {children}
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );
 }
+

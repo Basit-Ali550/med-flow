@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { patientsApi } from "@/lib/api";
 
 export function usePatients() {
   const [items, setItems] = useState([]);
@@ -10,11 +11,13 @@ export function usePatients() {
   const fetchPatients = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/patients?limit=100&sortBy=registeredAt&sortOrder=desc');
-      const data = await response.json();
-      if (data.success) {
-        setItems(data.data.patients || []);
-      }
+      const data = await patientsApi.getAll({
+        limit: 100,
+        sortBy: 'registeredAt',
+        sortOrder: 'desc'
+      });
+      
+      setItems(data.data.patients || []);
     } catch (error) {
       toast.error("Failed to load patients");
     } finally {
@@ -28,11 +31,7 @@ export function usePatients() {
 
   const updatePatientStatus = async (patientId, newStatus) => {
     try {
-      await fetch(`/api/patients/${patientId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      await patientsApi.patch(patientId, { status: newStatus });
       return true;
     } catch (error) {
       toast.error("Failed to update patient status");
@@ -42,7 +41,7 @@ export function usePatients() {
 
   const deletePatient = async (patientId) => {
     try {
-      await fetch(`/api/patients/${patientId}`, { method: 'DELETE' });
+      await patientsApi.delete(patientId);
       setItems(prev => prev.filter(p => p._id !== patientId));
       toast.success("Patient deleted");
       return true;
@@ -61,3 +60,4 @@ export function usePatients() {
     deletePatient
   };
 }
+
