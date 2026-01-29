@@ -1,107 +1,54 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
+import Logo from "@/assets/Logo.svg";
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-const Header = () => {
-  const styles = {
-    header: {
-      backgroundColor: "var(--color-primary)",
-      color: "var(--color-text-white)",
-      padding: "16px 24px",
-    },
-    container: {
-      maxWidth: "1280px",
-      margin: "0 auto",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    logoWrapper: {
-      display: "flex",
-      alignItems: "center",
-    },
-    logo: {
-      backgroundColor: "var(--color-bg-white)",
-      borderRadius: "9999px",
-      padding: "8px 12px",
-      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-      display: "flex",
-      alignItems: "center",
-      gap: "2px",
-    },
-    logoMed: {
-      color: "var(--color-primary)",
-      fontWeight: "700",
-      fontSize: "14px",
-    },
-    logoFlow: {
-      color: "var(--color-primary-light)",
-      fontWeight: "700",
-      fontSize: "14px",
-    },
-    titleWrapper: {
-      textAlign: "center",
-    },
-    title: {
-      fontSize: "28px",
-      fontWeight: "600",
-      letterSpacing: "0.025em",
-    },
-    subtitle: {
-      color: "var(--color-primary-100)",
-      fontSize: "14px",
-      marginTop: "4px",
-    },
-    menuButton: {
-      padding: "8px",
-      background: "transparent",
-      border: "none",
-      borderRadius: "8px",
-      cursor: "pointer",
-      color: "var(--color-text-white)",
-    },
-    menuIcon: {
-      width: "32px",
-      height: "32px",
-    },
-  };
-
+export function Header({ title, subtitle, showMenu = true, className = "" }) {
   return (
-    <header style={styles.header}>
-      <div style={styles.container}>
-        {/* Logo */}
-        <div style={styles.logoWrapper}>
-          <div style={styles.logo}>
-            <span style={styles.logoMed}>Med</span>
-            <span style={styles.logoFlow}>Flow</span>
+    <header
+      className={`bg-[#0D9488] text-white shadow-md sticky top-0 z-50 w-full ${className}`}
+    >
+      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        {/* Logo Section */}
+        <div className="flex items-center gap-3">
+          <Image
+            src={Logo}
+            alt="MedFlow Logo"
+            width={124}
+            height={59}
+            className="w-full h-[59px] object-contain"
+          />
+        </div>
+
+        {/* Center Title */}
+        {title && (
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center hidden md:block">
+            <h1 className="text-xl font-bold leading-tight">{title}</h1>
+            {subtitle && (
+              <p className="text-teal-100 text-xs opacity-90 font-medium">
+                {subtitle}
+              </p>
+            )}
           </div>
-        </div>
+        )}
 
-        {/* Title */}
-        <div style={styles.titleWrapper}>
-          <h1 style={styles.title}>Triage Dashboard</h1>
-          <p style={styles.subtitle}>Manage patients in the ER</p>
-        </div>
+        {/* Right Actions */}
+        <div className="flex items-center gap-2">
+          {/* Mobile Title (visible only on small screens) */}
+          <div className="md:hidden text-right mr-2">
+            <h1 className="text-sm font-bold">{title}</h1>
+          </div>
 
-        {/* Menu Icon */}
-        <button style={styles.menuButton}>
-          <svg
-            style={styles.menuIcon}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
-        </button>
+          {showMenu && (
+            <button>
+              <Menu className="w-11 h-8 text-[#FFFAFA]" />
+            </button>
+          )}
+        </div>
       </div>
     </header>
   );
-};
-
-export default Header;
+}

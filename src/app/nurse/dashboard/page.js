@@ -174,22 +174,7 @@ export default function NurseDashboard() {
         patient={aiModal.patient}
       />
 
-      {/* Header */}
-      <header className="bg-teal-600 text-white shadow-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="bg-white rounded-full py-1.5 px-3 shadow-sm">
-             <span className="text-teal-600 font-bold">Med</span>
-             <span className="text-teal-400 font-bold">Flow</span>
-          </div>
-          <div className="text-center">
-            <h1 className="text-xl font-bold">Triage Dashboard</h1>
-            <p className="text-teal-100 text-xs opacity-90">Manage patients in the ER</p>
-          </div>
-          <Button variant="ghost" size="icon" className="text-white hover:bg-teal-700">
-            <Menu className="w-6 h-6" />
-          </Button>
-        </div>
-      </header>
+      {/* Header removed - provided by Layout */}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto p-8">

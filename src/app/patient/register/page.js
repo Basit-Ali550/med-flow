@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast, Toaster } from "sonner";
 import PatientForm from "@/components/PatientForm/PatientForm";
 
+
 export default function PatientRegistration() {
   const router = useRouter();
 
@@ -45,20 +46,7 @@ export default function PatientRegistration() {
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-center" richColors />
 
-      {/* Header */}
-      <header className="bg-teal-600 text-white py-4 px-6 flex items-center justify-between shadow-md">
-        <div className="bg-white rounded-full py-2 px-3 flex items-center gap-0.5 shadow-sm">
-          <span className="text-teal-600 font-bold text-sm">Med</span>
-          <span className="text-teal-500 font-bold text-sm">Flow</span>
-        </div>
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Patient Registration</h1>
-          <p className="text-sm text-teal-100 mt-1 opacity-90">
-            Please fill in all relevant medical information.
-          </p>
-        </div>
-        <div className="w-20"></div>
-      </header>
+      {/* Header provided by Layout */}
 
       {/* Main Content */}
       <main className="max-w-3xl mx-auto py-8 px-4">

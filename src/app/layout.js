@@ -17,12 +17,17 @@ export const metadata = {
   keywords: ["medical", "triage", "dashboard", "ER", "patients", "healthcare"],
 };
 
+import { AppHeader } from "@/components/Header/AppHeader";
+
+// ...
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <AppHeader />
         {children}
       </body>
     </html>
