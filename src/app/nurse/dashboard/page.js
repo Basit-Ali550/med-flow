@@ -33,6 +33,11 @@ import { DroppableContainer } from "@/components/Dashboard/DroppableContainer";
 // Hooks
 import { usePatients } from "@/hooks/usePatients";
 
+const calculateCurrentWaitTime = (registeredAt) => {
+  if (!registeredAt) return 0;
+  return Math.floor((Date.now() - new Date(registeredAt).getTime()) / 60000);
+};
+
 export default function NurseDashboard() {
   const router = useRouter();
   
@@ -115,8 +120,7 @@ export default function NurseDashboard() {
 
       // Trigger AI Modal
       if (shouldTriggerAI) {
-        const waitTime = draggedItem.registeredAt ? 
-          Math.floor((Date.now() - new Date(draggedItem.registeredAt).getTime()) / 60000) : 0;
+        const waitTime = calculateCurrentWaitTime(draggedItem.registeredAt);
           
         setAiModal({
           isOpen: true,

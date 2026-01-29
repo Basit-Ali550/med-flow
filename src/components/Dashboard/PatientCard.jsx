@@ -18,24 +18,61 @@ export const PatientCard = ({
   dragHandleProps,
   isOverlay,
 }) => {
-  // Utility functions (could be moved to /lib/utils.js if reused elsewhere)
-  const calculateAge = (dob) => {
-    if (!dob) return "N/A";
-    // Note: Date.now() in render is technically impure but acceptable for display components
-    // where hydration mismatch isn't critical or is handled via useEffect elsewhere.
-    // For now, keeping it simple as per original logic.
-    const diff = Date.now() - new Date(dob).getTime();
-    return Math.abs(new Date(diff).getUTCFullYear() - 1970);
-  };
+  const [waitTimeDisplay, setWaitTimeDisplay] = React.useState("...");
+  const [ageDisplay, setAgeDisplay] = React.useState("N/A");
 
-  const calculateWaitTime = (registeredAt) => {
-    if (!registeredAt) return 0;
-    const diff = (Date.now() - new Date(registeredAt).getTime()) / 60000;
-    return Math.floor(diff);
-  };
+  // Calculate stats in useEffect to avoid impure render (Date.now())
+  // and hydration mismatches.
+  React.useEffect(() => {
+    const now = Date.now();
 
-  const age = calculateAge(patient.dateOfBirth);
-  const waitTime = calculateWaitTime(patient.registeredAt);
+    // 1. Calculate Age
+    if (patient.dateOfBirth) {
+      const diff = now - new Date(patient.dateOfBirth).getTime();
+      const age = Math.abs(new Date(diff).getUTCFullYear() - 1970);
+      setAgeDisplay(age);
+    }
+
+    // 2. Calculate Wait Time with Formatting
+    if (patient.registeredAt) {
+      const diffMs = now - new Date(patient.registeredAt).getTime();
+      const mins = Math.floor(diffMs / 60000);
+
+      if (mins < 60) {
+        setWaitTimeDisplay(`${mins}m`);
+      } else if (mins < 1440) {
+        // Less than 24 hours
+        const hours = Math.floor(mins / 60);
+        setWaitTimeDisplay(`${hours}h`);
+      } else {
+        const days = Math.floor(mins / 1440);
+        setWaitTimeDisplay(`${days}d`);
+      }
+    } else {
+      setWaitTimeDisplay("0m");
+    }
+
+    // Optional: Set up an interval to update wait time every minute
+    const interval = setInterval(() => {
+      // Re-run the logic? For simplicity in this component structure,
+      // we can just rely on the initial load or dependency changes,
+      // OR trigger a re-render.
+      // Given the "Dashboard" usage, live update is nice.
+      // We'll just copy logic or abstract it.
+      // keeping it simple: just update logic inside interval
+      const currentNow = Date.now();
+      if (patient.registeredAt) {
+        const dMs = currentNow - new Date(patient.registeredAt).getTime();
+        const m = Math.floor(dMs / 60000);
+        if (m < 60) setWaitTimeDisplay(`${m}m`);
+        else if (m < 1440) setWaitTimeDisplay(`${Math.floor(m / 60)}h`);
+        else setWaitTimeDisplay(`${Math.floor(m / 1440)}d`);
+      }
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [patient.dateOfBirth, patient.registeredAt]);
+
   const hasVitals =
     patient.vitalSigns && Object.keys(patient.vitalSigns).length > 0;
   const isHighPain = (patient.painLevel || 0) > 6;
@@ -62,7 +99,7 @@ export const PatientCard = ({
               <h3 className="font-bold text-gray-900 text-base">
                 {patient.fullName}{" "}
                 <span className="text-gray-400 font-normal text-sm ml-1">
-                  ({age}y, {patient.gender})
+                  ({ageDisplay}y, {patient.gender})
                 </span>
               </h3>
             </div>
@@ -106,7 +143,7 @@ export const PatientCard = ({
                 variant="secondary"
                 className="bg-yellow-50 text-yellow-700 border-yellow-100 rounded px-2"
               >
-                Wait time: {waitTime} minutes
+                Wait time: {waitTimeDisplay}
               </Badge>
             </div>
 
