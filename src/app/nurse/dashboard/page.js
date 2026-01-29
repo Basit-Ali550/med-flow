@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { toast, Toaster } from "sonner";
 import {
   DndContext,
-  closestCenter,
+  rectIntersection,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
   DragOverlay,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -35,8 +36,21 @@ import {
   Loader2,
 } from "lucide-react";
 
-// --- Sortable Item Component ---
+// --- Droppable Container Helper ---
+function DroppableContainer({ id, children, className }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  
+  return (
+    <div 
+      ref={setNodeRef} 
+      className={`${className} ${isOver ? 'ring-2 ring-teal-500 bg-teal-50/50' : ''}`}
+    >
+      {children}
+    </div>
+  );
+}
 
+// --- Sortable Item Component ---
 function SortablePatientCard({ patient, onEdit, onDelete }) {
   const {
     attributes,
@@ -50,7 +64,7 @@ function SortablePatientCard({ patient, onEdit, onDelete }) {
   const style = {
     transform: CSS.Translate.toString(transform),
     transition,
-    opacity: isDragging ? 0.4 : 1,
+    opacity: isDragging ? 0.3 : 1,
     zIndex: isDragging ? 999 : 1,
   };
 
@@ -58,8 +72,9 @@ function SortablePatientCard({ patient, onEdit, onDelete }) {
     <div ref={setNodeRef} style={style} className="mb-3 touch-none">
       <PatientCard 
         patient={patient} 
-        onEdit={onEdit} 
-        onDelete={onDelete} 
+        onEdit={(p) => onEdit(p)} 
+        onDelete={(p) => onDelete(p)} 
+        // Pass drag props for the whole card
         dragHandleProps={{ ...attributes, ...listeners }}
       />
     </div>
@@ -68,7 +83,6 @@ function SortablePatientCard({ patient, onEdit, onDelete }) {
 
 // --- Patient Card Component ---
 const PatientCard = ({ patient, onEdit, onDelete, dragHandleProps, isOverlay }) => {
-  // Helpers
   const calculateAge = (dob) => {
     if (!dob) return 'N/A';
     const diff = Date.now() - new Date(dob).getTime();
@@ -84,18 +98,19 @@ const PatientCard = ({ patient, onEdit, onDelete, dragHandleProps, isOverlay }) 
   const age = calculateAge(patient.dateOfBirth);
   const waitTime = calculateWaitTime(patient.registeredAt);
   const hasVitals = patient.vitalSigns && Object.keys(patient.vitalSigns).length > 0;
-  
-  // Style config
   const isHighPain = (patient.painLevel || 0) > 6;
   
   return (
-    <Card className={`p-4 border shadow-sm transition-all ${isOverlay ? 'shadow-xl rotate-1 scale-105 bg-white' : 'bg-white border-gray-100 hover:border-teal-100'}`}>
+    <Card 
+      {...dragHandleProps} // Applied to the entire card
+      className={`p-4 border shadow-sm transition-all group relative
+        cursor-grab active:cursor-grabbing hover:border-teal-400
+        ${isOverlay ? 'shadow-2xl rotate-2 scale-105 bg-white border-teal-500' : 'bg-white border-gray-100'}
+      `}
+    >
       <div className="flex gap-3">
-        {/* Drag Handle */}
-        <div 
-          {...dragHandleProps}
-          className="mt-1 text-gray-300 hover:text-teal-600 cursor-grab active:cursor-grabbing"
-        >
+        {/* Visual Grip Handle (Optional, kept for affordance but not required to click) */}
+        <div className="mt-1 text-gray-300 group-hover:text-teal-500 transition-colors">
           <GripHorizontal className="w-5 h-5" />
         </div>
 
@@ -138,11 +153,20 @@ const PatientCard = ({ patient, onEdit, onDelete, dragHandleProps, isOverlay }) 
                 </Badge>
              </div>
 
-             <div className="flex gap-1">
-                <button onClick={() => onEdit?.(patient)} className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-gray-50 rounded-md transition-colors">
+             {/* Action Buttons with Stop Propagation */}
+             <div className="flex gap-1 relative z-10">
+                <button 
+                  onPointerDown={(e) => e.stopPropagation()} 
+                  onClick={(e) => { e.stopPropagation(); onEdit?.(patient); }} 
+                  className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-gray-50 rounded-md transition-colors cursor-pointer"
+                >
                   <Pencil className="w-4 h-4" />
                 </button>
-                <button onClick={() => onDelete?.(patient)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-gray-50 rounded-md transition-colors">
+                <button 
+                  onPointerDown={(e) => e.stopPropagation()} 
+                  onClick={(e) => { e.stopPropagation(); onDelete?.(patient); }} 
+                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-gray-50 rounded-md transition-colors cursor-pointer"
+                >
                   <Trash2 className="w-4 h-4" />
                 </button>
              </div>
@@ -154,7 +178,6 @@ const PatientCard = ({ patient, onEdit, onDelete, dragHandleProps, isOverlay }) 
 };
 
 // --- Main Dashboard Component ---
-
 export default function NurseDashboard() {
   const router = useRouter();
   
@@ -166,7 +189,7 @@ export default function NurseDashboard() {
 
   // DnD Sensors
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -191,8 +214,6 @@ export default function NurseDashboard() {
   }, []);
 
   // Filter Items
-  // "Unscheduled" = Status 'Waiting' (Left side)
-  // "Scheduled" = Status 'Triaged' (Right side)
   const unscheduledItems = items.filter(p => p.status === 'Waiting');
   const scheduledItems = items.filter(p => p.status === 'Triaged');
 
@@ -203,7 +224,7 @@ export default function NurseDashboard() {
     p.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Handle Drag End
+  // Drag End Handler
   const handleDragEnd = async (event) => {
     const { active, over } = event;
     setActiveId(null);
@@ -211,41 +232,39 @@ export default function NurseDashboard() {
     if (!over) return;
 
     const patientId = active.id;
-    const isOverScheduled = over.id === 'scheduled-container' || scheduledItems.find(p => p._id === over.id);
-    const isOverUnscheduled = over.id === 'unscheduled-container' || unscheduledItems.find(p => p._id === over.id);
+    const isOverScheduled = over.id === 'scheduled-container' || 
+                            scheduledItems.some(p => p._id === over.id);
 
-    // Initial state copy for revert
-    const previousItems = [...items];
+    const isOverUnscheduled = over.id === 'unscheduled-container' || 
+                              unscheduledItems.some(p => p._id === over.id);
+
     const draggedItem = items.find(p => p._id === patientId);
-
     if (!draggedItem) return;
 
+    const previousItems = [...items];
     let newStatus = null;
 
-    // Moving Logic
     if (draggedItem.status === 'Waiting' && isOverScheduled) {
-      newStatus = 'Triaged';
+       newStatus = 'Triaged';
     } else if (draggedItem.status === 'Triaged' && isOverUnscheduled) {
-      newStatus = 'Waiting';
+       newStatus = 'Waiting';
     }
 
-    if (newStatus) {
-      // Optimistic Update
+    if (newStatus && newStatus !== draggedItem.status) {
       setItems(prev => prev.map(p => 
         p._id === patientId ? { ...p, status: newStatus } : p
       ));
 
-      // API Call
       try {
         await fetch(`/api/patients/${patientId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: newStatus }),
         });
-        toast.success(newStatus === 'Triaged' ? 'Patient moved to Scheduled' : 'Patient moved to Unscheduled');
+        toast.success(newStatus === 'Triaged' ? 'Moved to Scheduled' : 'Moved back to Unscheduled');
       } catch (error) {
-        toast.error("Failed to update status");
-        setItems(previousItems); // Revert
+        toast.error("Failed to move patient");
+        setItems(previousItems); 
       }
     }
   };
@@ -268,7 +287,6 @@ export default function NurseDashboard() {
   };
 
   const handleEdit = (patient) => {
-    // Navigate to edit page (To be implemented)
     toast.info("Edit functionality coming soon");
   };
 
@@ -293,16 +311,16 @@ export default function NurseDashboard() {
         </div>
       </header>
 
-      {/* Main */}
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto p-8">
         
-        {/* Actions Bar */}
+        {/* Actions */}
         <div className="flex justify-end gap-4 mb-8">
           <div className="relative w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input 
               placeholder="Search Patients..." 
-              className="pl-9 rounded-full border-gray-200 shadow-sm"
+              className="pl-9 rounded-full border-gray-200 shadow-sm focus-visible:ring-teal-500"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
@@ -312,16 +330,16 @@ export default function NurseDashboard() {
           </Button>
         </div>
 
-        {/* DnD Area */}
+        {/* DnD Context */}
         <DndContext 
           sensors={sensors} 
-          collisionDetection={closestCenter} 
+          collisionDetection={rectIntersection} 
           onDragStart={handleDragStart} 
           onDragEnd={handleDragEnd}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             
-            {/* Left: Unscheduled */}
+            {/* --- Unscheduled Column (Left) --- */}
             <div className="flex flex-col gap-4">
               <Card className="p-4 flex justify-between items-center shadow-sm border-gray-100">
                 <div>
@@ -331,8 +349,9 @@ export default function NurseDashboard() {
                 <span className="text-2xl font-bold">{filteredUnscheduled.length}</span>
               </Card>
 
-              <SortableContext id="unscheduled-container" items={filteredUnscheduled.map(p => p._id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-3 min-h-[300px]">
+              {/* Droppable Area */}
+              <DroppableContainer id="unscheduled-container" className="space-y-3 min-h-[300px] rounded-xl transition-all">
+                <SortableContext items={filteredUnscheduled.map(p => p._id)} strategy={verticalListSortingStrategy}>
                   {isLoading ? (
                     <div className="flex justify-center pt-10"><Loader2 className="animate-spin text-teal-600" /></div>
                   ) : filteredUnscheduled.map(patient => (
@@ -348,11 +367,11 @@ export default function NurseDashboard() {
                        No unscheduled patients
                     </div>
                   )}
-                </div>
-              </SortableContext>
+                </SortableContext>
+              </DroppableContainer>
             </div>
 
-            {/* Right: Scheduled */}
+            {/* --- Scheduled Column (Right) --- */}
             <div className="flex flex-col gap-4">
                <Card className="p-4 flex justify-between items-center shadow-sm border-gray-100">
                 <div>
@@ -362,25 +381,29 @@ export default function NurseDashboard() {
                 <span className="text-2xl font-bold">{filteredScheduled.length}</span>
               </Card>
 
-              <SortableContext id="scheduled-container" items={filteredScheduled.map(p => p._id)} strategy={verticalListSortingStrategy}>
-                <div className={`space-y-3 min-h-[300px] border-2 border-dashed rounded-xl p-4 transition-colors ${
+              {/* Droppable Area */}
+              <DroppableContainer 
+                id="scheduled-container" 
+                className={`space-y-3 min-h-[300px] border-2 border-dashed rounded-xl p-4 transition-all ${
                   filteredScheduled.length === 0 ? 'border-gray-300 bg-white flex items-center justify-center' : 'border-transparent'
-                }`}>
-                  {filteredScheduled.length === 0 && (
-                     <div className="text-center text-gray-400">
-                        Drag patients here for Triage
-                     </div>
-                  )}
-                  {filteredScheduled.map(patient => (
-                    <SortablePatientCard 
-                      key={patient._id} 
-                      patient={patient} 
-                      onEdit={handleEdit} 
-                      onDelete={handleDelete}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
+                }`}
+              >
+                 <SortableContext items={filteredScheduled.map(p => p._id)} strategy={verticalListSortingStrategy}>
+                    {filteredScheduled.length === 0 && (
+                       <div className="text-center text-gray-400 pointer-events-none">
+                          Drag patients here for Triage
+                       </div>
+                    )}
+                    {filteredScheduled.map(patient => (
+                      <SortablePatientCard 
+                        key={patient._id} 
+                        patient={patient} 
+                        onEdit={handleEdit} 
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                 </SortableContext>
+              </DroppableContainer>
             </div>
 
           </div>
