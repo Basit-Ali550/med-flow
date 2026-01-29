@@ -8,7 +8,7 @@ export const initialPatients = [
     symptoms: "Chest Pain, Shortness of Breath",
     painLevel: 9,
     waitTime: 30,
-    vitalsProvided: false,
+    vitalsProvided: true,
   },
   {
     id: 2,

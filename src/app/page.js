@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { toast, Toaster } from "sonner";
 import {
   Header,
   Button,
@@ -13,6 +14,11 @@ import { initialPatients, initialScheduledPatients } from "@/data/patients";
 export default function Home() {
   const [unscheduledPatients, setUnscheduledPatients] = useState(initialPatients);
   const [scheduledPatients, setScheduledPatients] = useState(initialScheduledPatients);
+
+  // Show success toast on initial load
+  useEffect(() => {
+    toast.success("Patient successfully edited.");
+  }, []);
 
   const styles = {
     container: {
@@ -40,24 +46,40 @@ export default function Home() {
 
   const handleAddPatient = () => {
     console.log("Add patient clicked");
+    toast.success("Add patient modal opened");
   };
 
   const handleEditPatient = (patient) => {
     console.log("Edit patient:", patient);
+    toast.success("Patient successfully edited.");
   };
 
   const handleDeletePatient = (patient) => {
     console.log("Delete patient:", patient);
     setUnscheduledPatients((prev) => prev.filter((p) => p.id !== patient.id));
     setScheduledPatients((prev) => prev.filter((p) => p.id !== patient.id));
+    toast.success("Patient deleted successfully.");
   };
 
   const handleDropToTriage = () => {
     console.log("Patient dropped to triage");
+    toast.success("Patient added to triage.");
   };
 
   return (
     <div style={styles.container}>
+      {/* Sonner Toaster */}
+      <Toaster 
+        position="top-center" 
+        richColors 
+        closeButton
+        toastOptions={{
+          style: {
+            marginTop: "80px",
+          },
+        }}
+      />
+
       <Header />
 
       <main style={styles.main}>
