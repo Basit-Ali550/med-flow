@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { User, ShieldCheck } from "lucide-react";
 import Image from "next/image";
-import logo from "../assets/images/MedFlow.svg";
+import logo from "@/assets/Images/MedFlow.svg";
 export default function Home() {
   const router = useRouter();
 
