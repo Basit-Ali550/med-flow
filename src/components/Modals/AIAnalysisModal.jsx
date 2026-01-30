@@ -131,7 +131,7 @@ export function AIAnalysisModal({
     } finally {
       setLoading(false);
     }
-  }, [patient]);
+  }, [patient, onAnalysisComplete]);
 
   useEffect(() => {
     if (isOpen && patient) {
