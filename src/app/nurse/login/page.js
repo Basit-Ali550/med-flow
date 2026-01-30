@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {  Loader2 } from "lucide-react";
+import {  Loader2, Eye, EyeOff } from "lucide-react";
 import { authApi, isAuthenticated } from "@/lib/api";
 import { handleClientError } from "@/lib/error-handler";
 import Image from "next/image";
@@ -19,6 +19,7 @@ export default function NurseLogin() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -91,16 +92,29 @@ export default function NurseLogin() {
 
         <div className="mb-5">
           <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="Type in your password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            className="mt-1"
-          />
+          <div className="relative mt-1">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Type in your password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+            >
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
 
         <div className="flex justify-center mt-8">

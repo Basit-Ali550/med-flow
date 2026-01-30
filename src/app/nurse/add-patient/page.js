@@ -27,7 +27,7 @@ export default function AddPatient() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <main className="max-w-4xl mx-auto py-8 px-6">
+      <main className="max-w-7xl mx-auto py-8 px-6">
         <PatientForm
           onSubmit={handleSubmit}
           onCancel={handleCancel}

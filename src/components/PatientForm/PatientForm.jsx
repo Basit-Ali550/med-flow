@@ -15,7 +15,10 @@ const baseSchema = {
     .min(2, "Name must be at least 2 characters")
     .required("Full name is required"),
   dateOfBirth: Yup.date()
-    .max(new Date(), "Date of birth cannot be in the future")
+    .max(
+      new Date(new Date().setDate(new Date().getDate() - 1)),
+      "Date of birth must be at least 1 day before today",
+    )
     .required("Date of birth is required"),
   gender: Yup.string(),
   symptoms: Yup.string()
@@ -159,7 +162,10 @@ export default function PatientForm({
             <Label htmlFor="painLevel">
               Pain level ({values.painLevel}/10)
             </Label>
-            <div className="mt-3">
+            <div className="mt-3 flex items-center gap-4 p-2 border-0 rounded-lg">
+              <span className="text-xs text-gray-500 font-medium whitespace-nowrap">
+                No Pain (0)
+              </span>
               <input
                 type="range"
                 id="painLevel"
@@ -170,12 +176,16 @@ export default function PatientForm({
                 onChange={(e) =>
                   setFieldValue("painLevel", parseInt(e.target.value))
                 }
-                className="w-full accent-teal-600 h-2 cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #0d9488 ${
+                    (values.painLevel / 10) * 100
+                  }%, #e5e7eb ${(values.painLevel / 10) * 100}%)`,
+                }}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-teal-600 border-none outline-none"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-2 font-medium">
-                <span>No Pain (0)</span>
-                <span>Severe Pain (10)</span>
-              </div>
+              <span className="text-xs text-gray-500 font-medium whitespace-nowrap">
+                Severe Pain (10)
+              </span>
             </div>
           </div>
 
@@ -222,7 +232,7 @@ export default function PatientForm({
 
           {/* Vital Signs - Only shown if requested */}
           {showVitalSigns && (
-            <Card className="p-6 mb-8 border-none shadow-sm ring-1 ring-gray-200 bg-teal-50/50">
+            <Card className="p-6 my-8 border-none shadow-sm ring-1 ring-gray-200 bg-teal-50/50">
               <div className="flex items-center gap-2.5 mb-5">
                 <Heart className="w-5 h-5 text-teal-600" />
                 <h2 className="text-xl font-semibold text-gray-900">
@@ -237,7 +247,7 @@ export default function PatientForm({
                     id="heartRate"
                     name="heartRate"
                     type="number"
-                    className="mt-2 bg-white"
+                    className="mt-2 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <div>
@@ -249,7 +259,7 @@ export default function PatientForm({
                       name="bloodPressureSys"
                       type="number"
                       placeholder="SYS"
-                      className="bg-white"
+                      className="bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <span className="text-gray-400">/</span>
                     <Field
@@ -258,7 +268,7 @@ export default function PatientForm({
                       name="bloodPressureDia"
                       type="number"
                       placeholder="DIA"
-                      className="bg-white"
+                      className="bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                 </div>
@@ -270,7 +280,7 @@ export default function PatientForm({
                     name="temperature"
                     type="number"
                     step="0.1"
-                    className="mt-2 bg-white"
+                    className="mt-2 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <div>
@@ -280,7 +290,7 @@ export default function PatientForm({
                     id="o2Saturation"
                     name="o2Saturation"
                     type="number"
-                    className="mt-2 bg-white"
+                    className="mt-2 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
               </div>
