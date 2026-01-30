@@ -27,9 +27,12 @@ import { Plus, Search, Loader2 } from "lucide-react";
 import { DeleteModal } from "@/components/Modals/DeleteModal";
 import { AIAnalysisModal } from "@/components/Modals/AIAnalysisModal";
 import { TreatmentConfirmationModal } from "@/components/Modals/TreatmentConfirmationModal";
+import { UpdateVitalsModal } from "@/components/Modals/UpdateVitalsModal";
+import { PatientHistoryModal } from "@/components/Modals/PatientHistoryModal";
 import { PatientCard } from "@/components/Dashboard/PatientCard";
 import { SortablePatientCard } from "@/components/Dashboard/SortablePatientCard";
 import { DroppableContainer } from "@/components/Dashboard/DroppableContainer";
+import { DashboardActions } from "@/components/Dashboard/DashboardActions";
 
 // Hooks
 import { usePatients } from "@/hooks/usePatients";
@@ -56,7 +59,7 @@ export default function NurseDashboard() {
   
   // --- Modal State Refactor ---
   const [activeModal, setActiveModal] = useState({ 
-    type: null, // 'DELETE' | 'AI' | 'TREATMENT'
+    type: null, // 'DELETE' | 'AI' | 'TREATMENT' | 'HISTORY' | 'VITALS'
     patient: null 
   });
 
@@ -189,6 +192,13 @@ export default function NurseDashboard() {
     }
   };
 
+  const handleHistoryClick = (patient) => openModal('HISTORY', patient);
+  const handleVitalsClick = (patient) => openModal('VITALS', patient);
+  
+  const handleVitalsUpdate = (updatedPatient) => {
+    setItems(prev => prev.map(p => p._id === updatedPatient._id ? updatedPatient : p));
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       
@@ -214,24 +224,28 @@ export default function NurseDashboard() {
         patientName={activeModal.patient?.fullName}
       />
 
+      <UpdateVitalsModal 
+        isOpen={activeModal.type === 'VITALS'}
+        onClose={closeModal}
+        patient={activeModal.patient}
+        onUpdateSuccess={handleVitalsUpdate}
+      />
+
+      <PatientHistoryModal 
+        isOpen={activeModal.type === 'HISTORY'}
+        onClose={closeModal}
+        patient={activeModal.patient}
+      />
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto p-8">
         
         {/* Actions Bar */}
-        <div className="flex justify-end gap-4 mb-8">
-          <div className="relative w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input 
-              placeholder="Search Patients..." 
-              className="pl-9 rounded-full border-gray-200 shadow-sm focus-visible:ring-teal-500"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Button onClick={handleAddPatient} className="rounded-full bg-teal-600 hover:bg-teal-700 px-6 shadow-md shadow-teal-600/20 cursor-pointer">
-            <Plus className="w-4 h-4 mr-2" /> Add Patient
-          </Button>
-        </div>
+        <DashboardActions 
+          searchQuery={searchQuery}
+          onSearchChange={e => setSearchQuery(e.target.value)}
+          onAddClick={handleAddPatient}
+        />
 
         {/* DnD Context */}
         <DndContext 
@@ -263,6 +277,8 @@ export default function NurseDashboard() {
                       patient={patient} 
                       onEdit={handleEdit} 
                       onDelete={handleDeleteClick}
+                      onHistory={handleHistoryClick}
+                      onVitals={handleVitalsClick}
                     />
                   ))}
                   {!isLoading && filteredUnscheduled.length === 0 && (
@@ -298,6 +314,8 @@ export default function NurseDashboard() {
                         patient={patient} 
                         onEdit={handleEdit} 
                         onDelete={handleDeleteClick}
+                        onHistory={handleHistoryClick}
+                        onVitals={handleVitalsClick}
                         onClick={handleCardClick}
                       />
                     ))}

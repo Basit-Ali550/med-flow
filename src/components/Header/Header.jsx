@@ -56,7 +56,6 @@ export function Header({ title, subtitle, showMenu = true, className = "" }) {
       className={`bg-[#0D9488] text-white shadow-md sticky top-0 z-50 w-full ${className}`}
     >
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        {/* Logo Section */}
         <div className="flex items-center gap-3">
           <Image
             src={Logo}
@@ -68,8 +67,6 @@ export function Header({ title, subtitle, showMenu = true, className = "" }) {
             onClick={() => router.push("/nurse/dashboard")}
           />
         </div>
-
-        {/* Center Title */}
         {title && (
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center hidden md:block">
             <h1 className="text-xl font-bold leading-tight tracking-tight">
@@ -83,9 +80,7 @@ export function Header({ title, subtitle, showMenu = true, className = "" }) {
           </div>
         )}
 
-        {/* Right Actions */}
         <div className="flex items-center gap-4 relative" ref={dropdownRef}>
-          {/* Mobile Title */}
           <div className="md:hidden text-right mr-2">
             <h1 className="text-sm font-bold">{title}</h1>
           </div>
@@ -94,30 +89,16 @@ export function Header({ title, subtitle, showMenu = true, className = "" }) {
             <>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`flex items-center gap-2 p-2 rounded-xl transition-all duration-200 cursor-pointer ${
-                  isDropdownOpen ? "bg-white/20" : "hover:bg-white/10"
-                }`}
+                className={`flex items-center gap-2 p-2 rounded-xl transition-all duration-200 cursor-pointer `}
               >
-                <div className="hidden sm:flex flex-col items-end mr-2">
-                  <span className="text-sm font-bold leading-none">
-                    {nurse?.fullName || "Nurse User"}
-                  </span>
-                  <span className="text-[10px] text-teal-100 font-medium mt-1">
-                    {nurse?.department || "ER Dept"}
-                  </span>
-                </div>
-                <div className="bg-white/10 p-1.5 rounded-lg border border-white/20">
-                  {isDropdownOpen ? (
-                    <X className="w-6 h-6" />
-                  ) : (
-                    <Menu className="w-6 h-6" />
-                  )}
-                </div>
+                {isDropdownOpen ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
               </button>
-              {/* Dropdown Menu */}
               {isDropdownOpen && (
-                <div className="absolute right-0 top-full mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-60 animate-in fade-in slide-in-from-top-2 duration-200">
-                  {/* User Profile Header */}
+                <div className="absolute right-0 top-full mt-3 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-60 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="p-5 bg-teal-50/50 border-b border-gray-100">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-xl bg-teal-600 flex items-center justify-center shadow-lg shadow-teal-600/20">
@@ -133,8 +114,6 @@ export function Header({ title, subtitle, showMenu = true, className = "" }) {
                       </div>
                     </div>
                   </div>
-
-                  {/* Menu Options */}
                   <div className="p-2">
                     {navItems.map((item) => (
                       <button
@@ -160,8 +139,6 @@ export function Header({ title, subtitle, showMenu = true, className = "" }) {
                       Logout Account
                     </button>
                   </div>
-
-                  {/* Footer */}
                   <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-center">
                     <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                       MedFlow ER System v1.0

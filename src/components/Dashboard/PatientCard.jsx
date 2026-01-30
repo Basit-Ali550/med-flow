@@ -10,31 +10,33 @@ import {
   Trash2,
   CheckCircle,
   AlertCircle,
+  History,
+  Activity,
 } from "lucide-react";
 
 export const PatientCard = ({
   patient,
   onEdit,
   onDelete,
+  onHistory,
+  onVitals,
   onClick,
   dragHandleProps,
   isOverlay,
 }) => {
-  const [waitTimeDisplay, setWaitTimeDisplay] = useState("...");
-  const [ageDisplay, setAgeDisplay] = useState("N/A");
+  const [waitTimeDisplay, setWaitTimeDisplay] = useState(
+    formatWaitTime(patient.registeredAt),
+  );
+  const ageDisplay = calculateAge(patient.dateOfBirth);
 
   useEffect(() => {
-    // Initial calculation
-    setAgeDisplay(calculateAge(patient.dateOfBirth));
-    setWaitTimeDisplay(formatWaitTime(patient.registeredAt));
-
     // Update wait time every minute
     const interval = setInterval(() => {
       setWaitTimeDisplay(formatWaitTime(patient.registeredAt));
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [patient.dateOfBirth, patient.registeredAt]);
+  }, [patient.registeredAt]);
 
   const hasVitals =
     patient.vitalSigns && Object.keys(patient.vitalSigns).length > 0;
@@ -127,10 +129,29 @@ export const PatientCard = ({
               <ActionButton
                 onClick={(e) => {
                   e.stopPropagation();
+                  onHistory?.(patient);
+                }}
+                icon={<History className="w-4 h-4" />}
+                className="hover:text-blue-600"
+                title="Medical History"
+              />
+              <ActionButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onVitals?.(patient);
+                }}
+                icon={<Activity className="w-4 h-4" />}
+                className="hover:text-orange-600"
+                title="Update Vitals"
+              />
+              <ActionButton
+                onClick={(e) => {
+                  e.stopPropagation();
                   onEdit?.(patient);
                 }}
                 icon={<Pencil className="w-4 h-4" />}
                 className="hover:text-teal-600"
+                title="Edit Details"
               />
               <ActionButton
                 onClick={(e) => {
@@ -139,6 +160,7 @@ export const PatientCard = ({
                 }}
                 icon={<Trash2 className="w-4 h-4" />}
                 className="hover:text-red-600"
+                title="Delete"
               />
             </div>
           </div>
