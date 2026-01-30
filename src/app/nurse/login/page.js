@@ -6,10 +6,11 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, Loader2 } from "lucide-react";
+import {  Loader2 } from "lucide-react";
 import { authApi, isAuthenticated } from "@/lib/api";
 import { handleClientError } from "@/lib/error-handler";
-
+import Image from "next/image";
+import Login from "@/assets/Icon/Login.svg"
 export default function NurseLogin() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -68,15 +69,13 @@ export default function NurseLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-5">
+    <div className="min-h-screen flex flex-col items-center justify-center p-5">
       {/* Login Icon */}
-      <div className="mb-8">
-        <LogIn className="w-16 h-16 text-teal-600" strokeWidth={1.5} />
-      </div>
+     <Image src={Login} alt="Logo" width={200} height={200} />
 
       {/* Login Form */}
-      <form className="w-full max-w-sm" onSubmit={handleSubmit}>
-        <div className="mb-5">
+      <form className="w-full max-w-xl" onSubmit={handleSubmit}>
+        <div className="my-12">
           <Label htmlFor="username">Username</Label>
           <Input
             id="username"

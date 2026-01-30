@@ -26,8 +26,8 @@ export default function PatientRegistration() {
   const handleCancel = () => router.push("/");
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-3xl mx-auto py-8 px-4">
+    <div className="min-h-screen bg-white">
+      <main className="max-w-7xl mx-auto py-8 px-4">
         <PatientForm
           onSubmit={handleSubmit}
           onCancel={handleCancel}
