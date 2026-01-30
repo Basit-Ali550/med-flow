@@ -66,7 +66,7 @@ export const PatientCard = ({
         {/* Content */}
         <div className="flex-1 min-w-0">
           {/* Header */}
-          <div className="flex justify-between items-start mb-2 relative">
+          <div className="flex justify-between items-start mb-4 relative">
             <div>
               <h3 className="font-bold text-gray-900 text-base truncate pr-6">
                 {patient.fullName}
@@ -125,9 +125,9 @@ export const PatientCard = ({
 
           {/* AI Analysis Snapshot (If Available) - Hide for Waiting/Unscheduled */}
           {patient.aiAnalysis && patient.status !== "Waiting" && (
-            <div className="mb-3 py-3 b rounded-lg">
+            <div className="mb-3  rounded-lg">
               <div className="flex justify-between items-center pb-2">
-                {patient.aiAnalysis.triageLevel && (
+                {patient.aiAnalysis.triageLevel ? (
                   <div className="mb-2">
                     <Badge
                       className={cn(
@@ -140,6 +140,8 @@ export const PatientCard = ({
                       {patient.aiAnalysis.triageLevel}
                     </Badge>
                   </div>
+                ) : (
+                  <div></div>
                 )}
                 <div
                   className={cn(
@@ -175,6 +177,13 @@ export const PatientCard = ({
             </div>
           )}
 
+          {/* Symptoms */}
+          <div className="text-sm text-gray-600 mb-3 flex gap-2">
+            <span className="font-semibold text-gray-700 shrink-0">
+              Symptoms:
+            </span>
+            <span className="line-clamp-2 break-words">{patient.symptoms}</span>
+          </div>
           {/* Footer Stats & Actions */}
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
