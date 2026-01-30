@@ -34,7 +34,7 @@ export function AIAnalysisViewModal({ isOpen, onClose, patient }) {
         <DialogTitle className="sr-only">AI Analysis Record</DialogTitle>
 
         {/* Header - Distinct from Generation Modal (e.g. Blue/Indigo instead of Teal) */}
-        <div className="bg-indigo-600 p-4 flex justify-between items-center px-6">
+        <div className="bg-[#0D9488] p-4 flex justify-between items-center px-6">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <FileText className="w-5 h-5 text-indigo-200" />
             Clinical Analysis Record
@@ -65,12 +65,12 @@ export function AIAnalysisViewModal({ isOpen, onClose, patient }) {
                 <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
                   Urgency Score
                 </div>
-                <div className="text-lg font-bold text-indigo-700">
+                <div className="text-lg font-bold text-[#0D9488]">
                   {triageLevel}
                 </div>
               </div>
               <div className="h-8 w-px bg-indigo-200"></div>
-              <div className="text-4xl font-black text-indigo-600">{score}</div>
+              <div className="text-4xl font-black text-[#0D9488]">{score}</div>
             </div>
           </div>
 

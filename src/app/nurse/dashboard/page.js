@@ -16,6 +16,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
+  arrayMove,
 } from "@dnd-kit/sortable";
 
 import { Plus, Search, Loader2 } from "lucide-react";
@@ -91,14 +92,22 @@ export default function NurseDashboard() {
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
 
-    // 2. High Urgency Score (if available)
+    // 2. Manual Order (Ascending)
+    // Allows dragging patients to specific positions, overriding other sorts.
+    const orderA = a.manualOrder ?? 0;
+    const orderB = b.manualOrder ?? 0;
+    if (Math.abs(orderA - orderB) > 0.00001) {
+        return orderA - orderB;
+    }
+
+    // 3. High Urgency Score (if available)
     const scoreA = a.aiAnalysis?.score || 0;
     const scoreB = b.aiAnalysis?.score || 0;
     if (scoreA !== scoreB) {
         return scoreB - scoreA; // Descending order
     }
 
-    // 3. Fallback: Registration Time (FIFO)
+    // 4. Fallback: Registration Time (FIFO)
     return new Date(a.registeredAt) - new Date(b.registeredAt);
   });
 
@@ -128,36 +137,75 @@ export default function NurseDashboard() {
     let newStatus = null;
     let shouldTriggerAI = false;
 
-    // Logic: Move Left -> Right (Unscheduled -> Scheduled)
+    // Logic 1: Move Left -> Right (Unscheduled -> Scheduled)
     if (draggedItem.status === PATIENT_STATUS.WAITING && isOverScheduled) {
        newStatus = PATIENT_STATUS.TRIAGED;
        shouldTriggerAI = true; 
     } 
-    // Logic: Move Right -> Left (Scheduled -> Unscheduled)
+    // Logic 2: Move Right -> Left (Scheduled -> Unscheduled)
     else if (draggedItem.status !== PATIENT_STATUS.WAITING && isOverUnscheduled) {
        newStatus = PATIENT_STATUS.WAITING;
     }
+    // Logic 3: Reorder within Scheduled List
+    else if (draggedItem.status === PATIENT_STATUS.TRIAGED && isOverScheduled && active.id !== over.id) {
+       const oldIndex = sortedScheduledItems.findIndex(p => p._id === active.id);
+       const newIndex = sortedScheduledItems.findIndex(p => p._id === over.id);
 
-    // If status changed, update state and API
+       if (oldIndex !== -1 && newIndex !== -1) {
+           // Simulate the move to calculate neighbors
+           const reorderedList = arrayMove(sortedScheduledItems, oldIndex, newIndex);
+           const movedItemIndex = reorderedList.findIndex(p => p._id === active.id);
+           
+           const prevItem = reorderedList[movedItemIndex - 1];
+           const nextItem = reorderedList[movedItemIndex + 1];
+
+           const lowerBound = prevItem ? (prevItem.manualOrder ?? 0) : null;
+           const upperBound = nextItem ? (nextItem.manualOrder ?? 0) : null;
+
+           let newOrder;
+           if (lowerBound !== null && upperBound !== null) {
+               newOrder = (lowerBound + upperBound) / 2;
+           } else if (lowerBound !== null) {
+               newOrder = lowerBound + 10000;
+           } else if (upperBound !== null) {
+               newOrder = upperBound - 10000;
+           } else {
+               newOrder = 0;
+           }
+
+           // Optimistic Update
+           setItems(prev => prev.map(p => 
+               p._id === patientId ? { ...p, manualOrder: newOrder } : p
+           ));
+
+           // API Call (Fire and forget generally, or toast on error)
+           try {
+              await updatePatient(patientId, { manualOrder: newOrder });
+           } catch (err) {
+              setItems(previousItems);
+              toast.error("Failed to reorder");
+           }
+       }
+       return;
+    }
+
+    // Apply Status Changes (Logic 1 & 2)
     if (newStatus && newStatus !== draggedItem.status) {
+      // Keep manualOrder roughly generic or reset? Keep it.
+      
       // Optimistic Update
       setItems(prev => prev.map(p => 
         p._id === patientId ? { ...p, status: newStatus } : p
       ));
 
       // Trigger AI Modal
-      // Trigger AI Modal
       if (shouldTriggerAI) {
         const waitTime = getWaitTimeMinutes(draggedItem.registeredAt);
-        // Constructed updated patient object with new status
-        // so the modal has the correct context (and saves correctly)
         const updatedItemForModal = { 
             ...draggedItem, 
             status: newStatus, 
             waitTime 
         };
-
-        // Check if analysis exists
         const hasAnalysis = draggedItem.aiAnalysis && draggedItem.aiAnalysis.score != null;
         openModal(hasAnalysis ? 'AI_VIEW' : 'AI', updatedItemForModal);
       }
@@ -344,6 +392,20 @@ export default function NurseDashboard() {
                       onDelete={handleDeleteClick}
                       onHistory={handleHistoryClick}
                       onVitals={handleVitalsClick}
+                      onTriageChange={async (patient, newLevel) => {
+                          setItems(prev => prev.map(p => p._id === patient._id ? { 
+                              ...p, 
+                              triageLevel: newLevel,
+                              aiAnalysis: { ...p.aiAnalysis, triageLevel: newLevel }
+                          } : p));
+                          
+                          try {
+                              await updatePatient(patient._id, { triageLevel: newLevel });
+                              toast.success("Priority level updated");
+                          } catch (error) {
+                              toast.error("Failed to update priority");
+                          }
+                      }}
                     />
                   ))}
                   {!isLoading && filteredUnscheduled.length === 0 && (
@@ -381,6 +443,22 @@ export default function NurseDashboard() {
                         onVitals={handleVitalsClick}
                         onClick={handleCardClick}
                         onPin={handlePin}
+                        onTriageChange={async (patient, newLevel) => {
+                            // Optimistic Update
+                            setItems(prev => prev.map(p => p._id === patient._id ? { 
+                                ...p, 
+                                triageLevel: newLevel,
+                                aiAnalysis: { ...p.aiAnalysis, triageLevel: newLevel } // Sync AI display too
+                            } : p));
+                            
+                            try {
+                                await updatePatient(patient._id, { triageLevel: newLevel });
+                                toast.success("Priority level updated");
+                            } catch (error) {
+                                toast.error("Failed to update priority");
+                                // Rollback logic could be added here
+                            }
+                        }}
                         onAIAnalysis={(patient) => {
                           const hasAnalysis = patient.aiAnalysis && patient.aiAnalysis.score != null;
                           openModal(hasAnalysis ? 'AI_VIEW' : 'AI', patient);

@@ -194,6 +194,10 @@ const patientSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    manualOrder: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

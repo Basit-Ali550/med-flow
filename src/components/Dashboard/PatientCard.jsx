@@ -5,6 +5,13 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn, calculateAge, formatWaitTime } from "@/lib/utils";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   GripHorizontal,
   Pencil,
   Trash2,
@@ -26,6 +33,7 @@ export const PatientCard = ({
   dragHandleProps,
   isOverlay,
   onPin,
+  onTriageChange,
   onAIAnalysis, // New prop
 }) => {
   const [waitTimeDisplay, setWaitTimeDisplay] = useState(
@@ -123,59 +131,66 @@ export const PatientCard = ({
             </div>
           </div>
 
-          {/* AI Analysis Snapshot (If Available) - Hide for Waiting/Unscheduled */}
-          {patient.aiAnalysis && patient.status !== "Waiting" && (
-            <div className="mb-3  rounded-lg">
-              <div className="flex justify-between items-center pb-2">
-                {patient.aiAnalysis.triageLevel ? (
-                  <div className="mb-2">
+          {/* Priority & AI Analysis Section */}
+          <div className="flex justify-between items-start mb-3 min-h-[28px]">
+            {/* Triage Level - Editable Dropdown (Always Visible) */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {onTriageChange ? (
+                <Select
+                  defaultValue={patient.triageLevel || "Semi-Urgent"}
+                  onValueChange={(val) => onTriageChange(patient, val)}
+                >
+                  <SelectTrigger className="h-auto w-auto border-0 p-0 shadow-none focus:ring-0 data-placeholder:text-foreground bg-transparent">
                     <Badge
                       className={cn(
-                        "text-[10px] font-bold uppercase",
-                        patient.aiAnalysis.score > 80
-                          ? "bg-red-100 text-red-800 hover:bg-red-100"
-                          : "bg-blue-100 text-blue-800 hover:bg-blue-100",
+                        "text-[10px] font-bold uppercase flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity",
+                        patient.triageLevel === "Critical" ||
+                          patient.triageLevel === "Resuscitation" ||
+                          patient.triageLevel === "Emergent"
+                          ? "bg-red-100 text-red-800 hover:bg-red-100 border-red-200"
+                          : patient.triageLevel === "Urgent"
+                            ? "bg-orange-100 text-orange-800 hover:bg-orange-100 border-orange-200"
+                            : patient.triageLevel === "Semi-Urgent"
+                              ? "bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-200"
+                              : "bg-green-100 text-green-800 hover:bg-green-100 border-green-200",
                       )}
                     >
-                      {patient.aiAnalysis.triageLevel}
+                      <SelectValue>
+                        {patient.triageLevel || "Set Priority"}
+                      </SelectValue>
                     </Badge>
-                  </div>
-                ) : (
-                  <div></div>
-                )}
-                <div
-                  className={cn(
-                    "text-xs font-bold p-1 rounded-md border",
-                    (patient.aiAnalysis.score ?? 0) > 50
-                      ? "bg-[#FFF0F2] border-[#F0000F] text-[#F0000F]"
-                      : "bg-[#FFF9BC] border-[#FFE33A] text-[#B89F00]", // Darkened text for readability on light yellow
-                  )}
-                >
-                  Ai Score:{" "}
-                  <span className=" ">
-                    {patient.aiAnalysis.score ?? "--"} /100
-                  </span>
-                </div>
-              </div>
-
-              {/* {patient.aiAnalysis.recommendedActions &&
-                patient.aiAnalysis.recommendedActions.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    {patient.aiAnalysis.recommendedActions
-                      .slice(0, 2)
-                      .map((action, i) => (
-                        <div
-                          key={i}
-                          className="flex gap-1.5 items-start text-[11px] text-slate-600 leading-tight"
-                        >
-                          <span className="text-teal-500 mt-0.5">•</span>
-                          <span className="line-clamp-1">{action}</span>
-                        </div>
-                      ))}
-                  </div>
-                )} */}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Critical">Critical</SelectItem>
+                    <SelectItem value="Urgent">Urgent</SelectItem>
+                    <SelectItem value="Semi-Urgent">Semi-Urgent</SelectItem>
+                    <SelectItem value="Non-Urgent">Non-Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                patient.triageLevel && (
+                  <Badge variant="outline">{patient.triageLevel}</Badge>
+                )
+              )}
             </div>
-          )}
+
+            {/* AI Score (Only for Scheduled/Analysis) */}
+            {patient.aiAnalysis && patient.status !== "Waiting" && (
+              <div
+                className={cn(
+                  "text-xs font-bold p-1 rounded-md border ml-auto",
+                  (patient.aiAnalysis.score ?? 0) > 50
+                    ? "bg-[#FFF0F2] border-[#F0000F] text-[#F0000F]"
+                    : "bg-[#FFF9BC] border-[#FFE33A] text-[#d4b106]",
+                )}
+              >
+                Ai Score: <span>{patient.aiAnalysis.score ?? "--"} /100</span>
+              </div>
+            )}
+          </div>
 
           {/* Symptoms */}
           <div className="text-sm text-gray-600 mb-3 flex gap-2">
