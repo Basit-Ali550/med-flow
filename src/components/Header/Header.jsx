@@ -48,7 +48,7 @@ export function Header({ title, subtitle, showMenu = true, className = "" }) {
 
   const navItems = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/nurse/dashboard" },
-    { label: "Profile Settings", icon: Settings, href: "#" },
+    { label: "Treatment Room", icon: User, href: "/nurse/all-patients" },
   ];
 
   return (
