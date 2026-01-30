@@ -1,20 +1,24 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Loader2,
   X,
-  Activity,
-  Thermometer,
-  Wind,
-  Heart,
   BrainCircuit,
+  CheckCircle2,
+  Stethoscope,
+  Activity,
+  ClipboardList,
 } from "lucide-react";
 
-export function AIAnalysisModal({ isOpen, onClose, patient }) {
+export function AIAnalysisModal({
+  isOpen,
+  onClose,
+  patient,
+  onAnalysisComplete,
+}) {
   const [loading, setLoading] = useState(true);
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState(null);
@@ -38,12 +42,15 @@ export function AIAnalysisModal({ isOpen, onClose, patient }) {
         - Symptoms: ${patient.symptoms}
         - Pain Level: ${patient.painLevel}/10
         - Vitals: ${patient.vitalSigns ? JSON.stringify(patient.vitalSigns) : "Not provided"}
+        - Medical History: ${patient.medicalHistory || "None"}
         
         Return a VALID JSON object with the following fields:
         1. "score": A number between 0-100 indicating urgency (100 = Critical/Immediate).
-        2. "reasoning": A concise, professional clinical explanation (3-4 sentences) justifying the score based on symptoms and vitals.
+        2. "triageLevel": One of ["Critical", "Urgent", "Semi-Urgent", "Non-Urgent"].
+        3. "reasoning": A concise, professional clinical explanation (3-4 sentences) justifying the score.
+        4. "recommendedActions": An array of 3-5 specific, short clinical actions (e.g., "Administer 500mg Paracetamol", "Order ECG", "Monitor BP every 15m").
         
-        Respond ONLY with the JSON.
+        Respond ONLY with the JSON. Do not include markdown formatting.
       `;
 
       const response = await fetch(
@@ -55,12 +62,13 @@ export function AIAnalysisModal({ isOpen, onClose, patient }) {
             Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
-            model: "gpt-4o-mini", // or gpt-3.5-turbo if preferred
+            model: "gpt-4o-mini",
+            response_format: { type: "json_object" },
             messages: [
               {
                 role: "system",
                 content:
-                  "You are a helpful medical assistant. Output JSON only.",
+                  "You are a helpful medical assistant. Output raw JSON only. Ensure the 'score' field is always included as a number.",
               },
               { role: "user", content: prompt },
             ],
@@ -83,7 +91,38 @@ export function AIAnalysisModal({ isOpen, onClose, patient }) {
         .trim();
 
       const result = JSON.parse(content);
+      if (result.score === undefined || result.score === null) {
+        result.score = 0; // Fallback to 0 if missing
+      }
+
+      // Auto-Map Valid Enums for Mongoose Persistence
+      const validLevels = ["Critical", "Urgent", "Semi-Urgent", "Non-Urgent"];
+      if (!validLevels.includes(result.triageLevel)) {
+        // Robust Fallback mapping
+        if (result.triageLevel === "Less Urgent")
+          result.triageLevel = "Semi-Urgent";
+        else if (result.triageLevel === "Emergent")
+          result.triageLevel = "Urgent";
+        else if (result.triageLevel === "Resuscitation")
+          result.triageLevel = "Critical";
+        else result.triageLevel = "Non-Urgent";
+      }
+
       setAnalysis(result);
+
+      // Auto-save: Persist to DB immediately
+      if (onAnalysisComplete) {
+        onAnalysisComplete({
+          ...patient,
+          triageLevel: result.triageLevel,
+          aiAnalysis: {
+            score: result.score,
+            triageLevel: result.triageLevel,
+            reasoning: result.reasoning,
+            recommendedActions: result.recommendedActions || [],
+          },
+        });
+      }
     } catch (err) {
       console.error("AI Analysis Error:", err);
       setError(
@@ -96,7 +135,16 @@ export function AIAnalysisModal({ isOpen, onClose, patient }) {
 
   useEffect(() => {
     if (isOpen && patient) {
-      generateAnalysis();
+      // Improved check: Use optional chaining and check against null/undefined explicitly
+      // to handle score = 0 cases.
+      if (patient.aiAnalysis && patient.aiAnalysis.score != null) {
+        console.log("Using cached analysis:", patient.aiAnalysis);
+        setAnalysis(patient.aiAnalysis);
+        setLoading(false);
+      } else {
+        console.log("No valid analysis found, generating new...");
+        generateAnalysis();
+      }
     } else {
       // Reset state when closed
       setLoading(true);
@@ -111,37 +159,43 @@ export function AIAnalysisModal({ isOpen, onClose, patient }) {
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         showCloseButton={false}
-        className="sm:max-w-[700px] p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-xl gap-0"
+        className="sm:max-w-[900px] p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-xl gap-0 z-100"
       >
+        <DialogTitle className="sr-only">AI Clinical Assessment</DialogTitle>
         {!loading && !error && (
-          <div className="bg-teal-700 p-5 flex justify-between items-center">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <div className="bg-teal-700 p-4 flex justify-between items-center px-6">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <BrainCircuit className="w-5 h-5 text-teal-200" />
               AI Clinical Assessment
             </h2>
             <button
               onClick={onClose}
               className="text-teal-100 hover:text-white transition-colors cursor-pointer p-1"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         )}
 
-        <div className="p-6">
+        <div className="p-0">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 space-y-6">
+            <div className="flex flex-col items-center justify-center py-20 px-8 space-y-6">
               <div className="relative">
                 <div className="w-24 h-24 border-[6px] border-teal-50 border-t-teal-600 rounded-full animate-spin"></div>
                 <BrainCircuit className="w-8 h-8 text-teal-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
               </div>
               <div className="text-center">
-                <p className="sm:text-2xl text-xl font-bold text-black">
+                <p className="text-xl font-bold text-gray-900">
                   Analyzing Patient Data...
+                </p>
+                <p className="text-gray-500 mt-2 text-sm">
+                  Generating triage score, clinical reasoning, and recommended
+                  actions.
                 </p>
               </div>
             </div>
           ) : error ? (
-            <div className="text-center py-10">
+            <div className="text-center py-12 px-6">
               <div className="bg-red-50 text-red-600 p-6 rounded-2xl inline-block mb-6 max-w-md border border-red-100 italic">
                 {error}
               </div>
@@ -156,104 +210,182 @@ export function AIAnalysisModal({ isOpen, onClose, patient }) {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-8">
-              {/* Header Info */}
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="sm:text-2xl text-xl font-bold text-black tracking-tight">
-                    {patient.fullName}
-                  </h3>
-                  <div className="flex items-center gap-2 text-[#808080] font-semibold mt-1">
-                    <span className=" px-2 py-0.5 rounded text-xs uppercase">
-                      {patient.gender}
+            <div className="flex flex-col md:flex-row h-full min-h-[500px]">
+              {/* LEFT COLUMN: Patient Context (40%) */}
+              <div className="md:w-[35%] bg-gray-50 border-r border-gray-100 p-6 flex flex-col gap-6">
+                {/* Identity */}
+                <div className="space-y-3">
+                  <div className="w-16 h-16 rounded-2xl bg-white border border-gray-200 shadow-sm flex items-center justify-center mb-2">
+                    <span className="text-2xl font-bold text-teal-700">
+                      {patient.fullName.charAt(0)}
                     </span>
-                    <span className="w-1 h-1 rounded-full"></span>
-                    <span>{patient.age || "N/A"} Years Old</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 leading-tight">
+                      {patient.fullName}
+                    </h3>
+                    <p className="text-sm text-gray-500 font-medium mt-1">
+                      {patient.age || "N/A"} Years • {patient.gender}
+                    </p>
                   </div>
                 </div>
 
-                <div className="bg-[#FFF9BC] border-2 border-[#FFE33A] rounded-2xl px-6 py-3 text-center shadow-sm">
-                  <div className="text-4xl font-normal text-[#8D4A00] leading-none">
-                    {analysis.score} /100
-                  </div>
-                  <div className="text-[10px] text-amber-800 font-extrabold uppercase tracking-widest mt-1">
-                    AI Score
-                  </div>
-                </div>
-              </div>
-
-              {/* Main Content Sections */}
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                {/* AI Reasoning */}
-                <div className="md:col-span-3 bg-[#FAFAFF] rounded-2xl p-6 border border-[#D9D9D9] relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 opacity-5">
-                    <BrainCircuit className="w-24 h-24" />
-                  </div>
-                  <h4 className="text-[#3C3C4399] font-black text-base tracking-[0.2em] uppercase mb-2">
-                    AI Reasoning
+                {/* Complaint */}
+                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                    Chief Complaint
                   </h4>
-                  <p className="text-black leading-relaxed font-medium text-sm relative z-10">
-                    {analysis.reasoning}
+                  <p className="text-gray-800 text-sm font-medium leading-relaxed italic">
+                    &quot;{patient.symptoms}&quot;
                   </p>
                 </div>
 
-                {/* Vitals Snapshot */}
-                <div className="md:col-span-2 ">
-                  <div className="flex flex-wrap gap-2">
-                    <Badge
-                      variant="secondary"
-                      className="bg-teal-50 text-teal-700 border-teal-100 px-4 py-1.5 text-sm font-bold rounded-full"
-                    >
-                      Pain Level: {patient.painLevel}/10
-                    </Badge>
-                    <Badge
-                      variant="secondary"
-                      className="bg-blue-50 text-blue-700 border-blue-100 px-4 py-1.5 text-sm font-bold rounded-full"
-                    >
-                      {patient.waitTime || "0"}m
-                    </Badge>
-                  </div>
-                  <div className="mt-4 bg-white border-2 border-gray-100 rounded-2xl p-6 shadow-sm">
-                    <h4 className="text-gray-400 font-black text-[10px] tracking-[0.2em] uppercase mb-5">
-                      Live Vitals Data
+                {/* Context Stats */}
+                <div className="flex flex-wrap gap-2 mt-auto">
+                  <Badge
+                    variant="outline"
+                    className="bg-white text-gray-600 border-gray-200"
+                  >
+                    Pain: {patient.painLevel}/10
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className="bg-white text-gray-600 border-gray-200"
+                  >
+                    Wait: {patient.waitTime || 0}m
+                  </Badge>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: AI Analysis & Vitals (60%) */}
+              <div className="md:w-[65%] p-6 bg-white overflow-y-auto max-h-[80vh]">
+                {/* Top Section: Score & Triage Level */}
+                <div className="flex justify-between items-start mb-8">
+                  <div>
+                    <h4 className="text-gray-900 font-bold text-lg flex items-center gap-2">
+                      <Stethoscope className="w-5 h-5 text-teal-600" />
+                      Clinical Assessment
                     </h4>
-                    <div className="space-y-4">
-                      <VitalItem
-                        label="Heart Rate"
+                    <p className="text-sm text-gray-500 mt-1">
+                      AI-Generated Triage Recommendation
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="flex items-center justify-end gap-3 mb-1">
+                      <span className="text-3xl font-black text-teal-700">
+                        {analysis.score}
+                      </span>
+                      <div className="h-8 w-[2px] bg-gray-200"></div>
+                      <div className="text-right">
+                        <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                          Urgency
+                        </div>
+                        <div className="text-sm font-bold text-teal-600">
+                          {analysis.triageLevel}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Reasoning */}
+                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                    <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                      <Activity className="w-3 h-3" /> Analysis Reasoning
+                    </h5>
+                    <p className="text-slate-800 text-sm leading-relaxed font-medium">
+                      {analysis.reasoning}
+                    </p>
+                  </div>
+
+                  {/* Recommended Actions */}
+                  <div>
+                    <h5 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                      <CheckCircle2 className="w-3 h-3 text-teal-500" />{" "}
+                      Recommended Actions
+                    </h5>
+                    <div className="grid grid-cols-1 gap-2">
+                      {analysis.recommendedActions &&
+                      analysis.recommendedActions.length > 0 ? (
+                        analysis.recommendedActions.map((action, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-start gap-3 p-3 bg-white border border-gray-100 rounded-lg shadow-sm hover:border-teal-100 transition-colors"
+                          >
+                            <span className="shrink-0 w-5 h-5 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center text-xs font-bold mt-0.5">
+                              {idx + 1}
+                            </span>
+                            <span className="text-sm text-gray-700 font-medium">
+                              {action}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-400 italic">
+                          No specific actions recommended.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Live VitalsRow */}
+                  <div className="pt-4 border-t border-gray-100">
+                    <h5 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+                      Patient Vitals
+                    </h5>
+                    <div className="grid grid-cols-4 gap-2">
+                      <CompactVital
+                        label="HR"
                         value={patient.vitalSigns?.heartRate}
-                        unit="BPM"
+                        unit="bpm"
                       />
-                      <VitalItem
-                        label="Blood Pressure"
+                      <CompactVital
+                        label="BP"
                         value={`${patient.vitalSigns?.bloodPressureSys || "--"}/${patient.vitalSigns?.bloodPressureDia || "--"}`}
                       />
-                      <VitalItem
-                        label="Temperature"
+                      <CompactVital
+                        label="Temp"
                         value={patient.vitalSigns?.temperature}
                         unit="°C"
                       />
-                      <VitalItem
-                        label="O2 Saturation"
+                      <CompactVital
+                        label="O2"
                         value={patient.vitalSigns?.o2Saturation}
                         unit="%"
                       />
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Footer */}
-              <div className="flex justify-between items-center pt-2">
-                <p className="text-[10px] text-gray-400 font-medium max-w-[300px]">
-                  *AI assessments are for guidance only. Please verify with
-                  physical clinical observation.
-                </p>
-                <Button
-                  onClick={onClose}
-                  className="bg-teal-600 hover:bg-teal-700 text-white rounded-full px-10 h-11 font-bold shadow-lg shadow-teal-600/20 active:scale-95 transition-all cursor-pointer"
-                >
-                  Dismiss Report
-                </Button>
+                {/* Footer Actions */}
+                <div className="mt-8 flex justify-end relative z-200">
+                  <Button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent bubbling
+                      console.log("Acknowledge clicked");
+                      if (onAnalysisComplete) {
+                        onAnalysisComplete({
+                          ...patient,
+                          triageLevel: analysis.triageLevel, // Update top-level triage
+                          aiAnalysis: {
+                            score: analysis.score,
+                            triageLevel: analysis.triageLevel,
+                            reasoning: analysis.reasoning,
+                            recommendedActions:
+                              analysis.recommendedActions || [],
+                          },
+                        });
+                      }
+                      onClose();
+                    }}
+                    className="bg-gray-900 hover:bg-black text-white rounded-full px-6 py-2 h-10 text-sm font-bold shadow-lg transition-all cursor-pointer pointer-events-auto"
+                  >
+                    Acknowledge Assessment
+                  </Button>
+                </div>
               </div>
             </div>
           )}
@@ -263,23 +395,15 @@ export function AIAnalysisModal({ isOpen, onClose, patient }) {
   );
 }
 
-function VitalItem({ icon, label, value, unit = "" }) {
-  const displayValue =
-    value === undefined || value === null || value === "" ? "--" : value;
+function CompactVital({ label, value, unit }) {
   return (
-    <div className="flex justify-between items-center group">
-      <div className="flex items-center gap-3">
-        <span className="font-bold text-sm text-gray-600">{label}</span>
+    <div className="bg-gray-50 border border-gray-100 rounded-lg p-2 text-center">
+      <div className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">
+        {label}
       </div>
-      <div className="text-right">
-        <span className="font-black text-gray-900 text-base">
-          {displayValue}
-        </span>
-        {unit && value && (
-          <span className="text-[10px] text-gray-400 ml-1 font-bold uppercase">
-            {unit}
-          </span>
-        )}
+      <div className="text-sm font-bold text-gray-900 truncate">
+        {value || "--"}{" "}
+        <span className="text-[9px] font-normal text-gray-400">{unit}</span>
       </div>
     </div>
   );

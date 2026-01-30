@@ -23,6 +23,7 @@ import { Plus, Search, Loader2 } from "lucide-react";
 // Custom Components
 import { DeleteModal } from "@/components/Modals/DeleteModal";
 import { AIAnalysisModal } from "@/components/Modals/AIAnalysisModal";
+import { AIAnalysisViewModal } from "@/components/Modals/AIAnalysisViewModal";
 import { TreatmentConfirmationModal } from "@/components/Modals/TreatmentConfirmationModal";
 import { UpdateVitalsModal } from "@/components/Modals/UpdateVitalsModal";
 import { PatientHistoryModal } from "@/components/Modals/PatientHistoryModal";
@@ -47,7 +48,8 @@ export default function NurseDashboard() {
     items, 
     setItems, 
     isLoading, 
-    updatePatientStatus, 
+    updatePatientStatus,
+    updatePatient, // Need this for saving AI data/Pinning
     deletePatient 
   } = usePatients();
 
@@ -81,6 +83,24 @@ export default function NurseDashboard() {
   const filteredScheduled = scheduledItems.filter(p => 
     p.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // --- Sorting Logic ---
+  // Priority: Pinned > High Urgency Score > Oldest Wait Time
+  const sortedScheduledItems = [...filteredScheduled].sort((a, b) => {
+    // 1. Pinned items first
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+
+    // 2. High Urgency Score (if available)
+    const scoreA = a.aiAnalysis?.score || 0;
+    const scoreB = b.aiAnalysis?.score || 0;
+    if (scoreA !== scoreB) {
+        return scoreB - scoreA; // Descending order
+    }
+
+    // 3. Fallback: Registration Time (FIFO)
+    return new Date(a.registeredAt) - new Date(b.registeredAt);
+  });
 
   const activePatient = items.find(p => p._id === activeId);
 
@@ -126,10 +146,20 @@ export default function NurseDashboard() {
       ));
 
       // Trigger AI Modal
+      // Trigger AI Modal
       if (shouldTriggerAI) {
         const waitTime = getWaitTimeMinutes(draggedItem.registeredAt);
-        // Note: We open modal with the *updated* local data context
-        openModal('AI', { ...draggedItem, waitTime });
+        // Constructed updated patient object with new status
+        // so the modal has the correct context (and saves correctly)
+        const updatedItemForModal = { 
+            ...draggedItem, 
+            status: newStatus, 
+            waitTime 
+        };
+
+        // Check if analysis exists
+        const hasAnalysis = draggedItem.aiAnalysis && draggedItem.aiAnalysis.score != null;
+        openModal(hasAnalysis ? 'AI_VIEW' : 'AI', updatedItemForModal);
       }
 
       // API Call
@@ -197,6 +227,38 @@ export default function NurseDashboard() {
     setItems(prev => prev.map(p => p._id === updatedPatient._id ? updatedPatient : p));
   };
 
+  const handleAnalysisComplete = async (updatedPatient) => {
+     // 1. Update Local State immediately
+     setItems(prev => prev.map(p => p._id === updatedPatient._id ? updatedPatient : p));
+     
+     // 2. Persist to API
+     try {
+       await updatePatient(updatedPatient._id, {
+           aiAnalysis: updatedPatient.aiAnalysis,
+           triageLevel: updatedPatient.triageLevel // Persist top-level triage
+       });
+       toast.success("AI Analysis saved to patient record");
+     } catch (err) {
+       console.error("Failed to save analysis", err);
+       toast.error("Failed to save analysis");
+     }
+  };
+
+  const handlePin = async (patient) => {
+      const newPinnedState = !patient.isPinned;
+      
+      // Optimistic Update
+      setItems(prev => prev.map(p => p._id === patient._id ? { ...p, isPinned: newPinnedState } : p));
+      
+      try {
+          await updatePatient(patient._id, { isPinned: newPinnedState });
+      } catch (err) {
+           // Rollback
+          setItems(prev => prev.map(p => p._id === patient._id ? { ...p, isPinned: !newPinnedState } : p));
+          toast.error("Failed to update pin status");
+      }
+  };
+
   return (
     <div className="min-h-screen">
       
@@ -211,6 +273,13 @@ export default function NurseDashboard() {
 
       <AIAnalysisModal 
         isOpen={activeModal.type === 'AI'}
+        onClose={closeModal}
+        patient={activeModal.patient}
+        onAnalysisComplete={handleAnalysisComplete}
+      />
+
+      <AIAnalysisViewModal 
+        isOpen={activeModal.type === 'AI_VIEW'}
         onClose={closeModal}
         patient={activeModal.patient}
       />
@@ -298,11 +367,11 @@ export default function NurseDashboard() {
               <DroppableContainer 
                 id="scheduled-container" 
                 className={`space-y-3 min-h-[300px] transition-all ${
-                  filteredScheduled.length === 0 ? ' bg-white flex items-center justify-center' : ''
+                  sortedScheduledItems.length === 0 ? ' bg-white flex items-center justify-center' : ''
                 }`}
               >
-                 <SortableContext items={filteredScheduled.map(p => p._id)} strategy={verticalListSortingStrategy}>
-                    {filteredScheduled.map(patient => (
+                 <SortableContext items={sortedScheduledItems.map(p => p._id)} strategy={verticalListSortingStrategy}>
+                    {sortedScheduledItems.map(patient => (
                       <SortablePatientCard 
                         key={patient._id} 
                         patient={patient} 
@@ -311,6 +380,11 @@ export default function NurseDashboard() {
                         onHistory={handleHistoryClick}
                         onVitals={handleVitalsClick}
                         onClick={handleCardClick}
+                        onPin={handlePin}
+                        onAIAnalysis={(patient) => {
+                          const hasAnalysis = patient.aiAnalysis && patient.aiAnalysis.score != null;
+                          openModal(hasAnalysis ? 'AI_VIEW' : 'AI', patient);
+                        }}
                       />
                     ))}
                     

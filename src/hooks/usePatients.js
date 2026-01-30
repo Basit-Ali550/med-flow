@@ -52,12 +52,23 @@ export function usePatients() {
     }
   };
 
+  const updatePatient = async (patientId, data) => {
+      try {
+          await patientsApi.patch(patientId, data);
+          return true;
+      } catch (error) {
+          handleClientError(error);
+          return false;
+      }
+  };
+
   return {
     items,
     setItems,
     isLoading,
     refreshPatients: fetchPatients,
     updatePatientStatus,
+    updatePatient, // Exporting the new function
     deletePatient
   };
 }
