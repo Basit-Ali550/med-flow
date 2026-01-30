@@ -82,6 +82,75 @@ export function UpdateVitalsModal({
     }
   };
 
+  // Helper for Validation Colors
+  const getVitalColor = (type, value) => {
+    if (!value) return "border-gray-200 focus:border-teal-500";
+    const num = parseFloat(value);
+
+    switch (type) {
+      case "heartRate":
+        if (num < 40 || num > 150)
+          return "border-red-500 focus:border-red-600 bg-red-50";
+        if (num < 60 || num > 100)
+          return "border-amber-500 focus:border-amber-600 bg-amber-50";
+        return "border-emerald-500 focus:border-emerald-600 bg-emerald-50";
+
+      case "temperature":
+        if (num < 35.0 || num > 39.5)
+          return "border-red-500 focus:border-red-600 bg-red-50";
+        if (num < 36.0 || num > 37.5)
+          return "border-amber-500 focus:border-amber-600 bg-amber-50";
+        return "border-emerald-500 focus:border-emerald-600 bg-emerald-50";
+
+      case "bloodPressureSys":
+        if (num < 90 || num > 180)
+          return "border-red-500 focus:border-red-600 bg-red-50";
+        if (num > 120)
+          return "border-amber-500 focus:border-amber-600 bg-amber-50";
+        return "border-emerald-500 focus:border-emerald-600 bg-emerald-50";
+
+      case "bloodPressureDia":
+        if (num < 60 || num > 110)
+          return "border-red-500 focus:border-red-600 bg-red-50";
+        if (num > 80)
+          return "border-amber-500 focus:border-amber-600 bg-amber-50";
+        return "border-emerald-500 focus:border-emerald-600 bg-emerald-50";
+
+      case "o2Saturation":
+        if (num < 85) return "border-red-500 focus:border-red-600 bg-red-50";
+        if (num < 95)
+          return "border-amber-500 focus:border-amber-600 bg-amber-50";
+        return "border-emerald-500 focus:border-emerald-600 bg-emerald-50";
+
+      default:
+        return "border-gray-200 focus:border-teal-500";
+    }
+  };
+
+  const getVitalMessage = (type, value) => {
+    if (!value) return null;
+    const num = parseFloat(value);
+
+    switch (type) {
+      case "heartRate":
+        if (num > 150) return "Critical High";
+        if (num < 40) return "Critical Low";
+        if (num > 100) return "Tachycardia";
+        if (num < 60) return "Bradycardia";
+        break;
+      case "temperature":
+        if (num > 39) return "High Fever";
+        if (num > 37.5) return "Fever";
+        if (num < 35) return "Hypothermia";
+        break;
+      case "o2Saturation":
+        if (num < 90) return "Critical Hypoxia";
+        if (num < 95) return "Low O2";
+        break;
+    }
+    return null;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl p-0 border-none shadow-2xl rounded-xl overflow-hidden">
@@ -106,10 +175,14 @@ export function UpdateVitalsModal({
               <div className="space-y-2">
                 <Label
                   htmlFor="heartRate"
-                  className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1.5"
+                  className="text-xs font-bold text-gray-500 uppercase flex items-center justify-between"
                 >
-                  <Heart className="w-3.5 h-3.5 text-rose-500" />
-                  Heart Rate
+                  <div className="flex items-center gap-1.5">
+                    <Heart className="w-3.5 h-3.5 text-rose-500" /> Heart Rate
+                  </div>
+                  <span className="text-[10px] text-red-500 font-bold">
+                    {getVitalMessage("heartRate", vitals.heartRate)}
+                  </span>
                 </Label>
                 <div className="relative">
                   <Input
@@ -119,17 +192,24 @@ export function UpdateVitalsModal({
                     placeholder="00"
                     value={vitals.heartRate}
                     onChange={handleChange}
-                    className="h-11 bg-gray-50 border-gray-200 focus:bg-white"
+                    className={`h-11 transition-all duration-300 border-2 ${getVitalColor("heartRate", vitals.heartRate)}`}
                   />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">
+                    BPM
+                  </span>
                 </div>
               </div>
               <div className="space-y-2">
                 <Label
                   htmlFor="temperature"
-                  className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1.5"
+                  className="text-xs font-bold text-gray-500 uppercase flex items-center justify-between"
                 >
-                  <Thermometer className="w-3.5 h-3.5 text-orange-500" />
-                  Temp
+                  <div className="flex items-center gap-1.5">
+                    <Thermometer className="w-3.5 h-3.5 text-orange-500" /> Temp
+                  </div>
+                  <span className="text-[10px] text-red-500 font-bold">
+                    {getVitalMessage("temperature", vitals.temperature)}
+                  </span>
                 </Label>
                 <div className="relative">
                   <Input
@@ -140,7 +220,7 @@ export function UpdateVitalsModal({
                     placeholder="00.0"
                     value={vitals.temperature}
                     onChange={handleChange}
-                    className="h-11 bg-gray-50 border-gray-200 focus:bg-white"
+                    className={`h-11 transition-all duration-300 border-2 ${getVitalColor("temperature", vitals.temperature)}`}
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">
                     °C
@@ -150,40 +230,55 @@ export function UpdateVitalsModal({
             </div>
 
             {/* Blood Pressure Card */}
-
-            <Label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1.5 mb-3">
-              <Droplet className="w-3.5 h-3.5 text-teal-600" />
-              Blood Pressure
-            </Label>
-            <div className="flex items-center gap-3">
-              <Input
-                id="bloodPressureSys"
-                name="bloodPressureSys"
-                type="number"
-                placeholder="SYS"
-                value={vitals.bloodPressureSys}
-                onChange={handleChange}
-                className="h-11 bg-gray-50 border-gray-200 focus:bg-white text-center font-bold"
-              />
-              <span className="text-gray-300 font-light">/</span>
-              <Input
-                id="bloodPressureDia"
-                name="bloodPressureDia"
-                type="number"
-                placeholder="DIA"
-                value={vitals.bloodPressureDia}
-                onChange={handleChange}
-                className="h-11 bg-gray-50 border-gray-200 focus:bg-white text-center font-bold"
-              />
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1.5 mb-3">
+                <Droplet className="w-3.5 h-3.5 text-teal-600" />
+                Blood Pressure
+              </Label>
+              <div className="flex items-center gap-3">
+                <div className="relative w-full">
+                  <Input
+                    id="bloodPressureSys"
+                    name="bloodPressureSys"
+                    type="number"
+                    placeholder="SYS"
+                    value={vitals.bloodPressureSys}
+                    onChange={handleChange}
+                    className={`h-11 transition-all duration-300 border-2 text-center font-bold ${getVitalColor("bloodPressureSys", vitals.bloodPressureSys)}`}
+                  />
+                  <span className="absolute right-2 top-1 text-[8px] font-bold text-gray-400 uppercase">
+                    Sys
+                  </span>
+                </div>
+                <span className="text-gray-300 font-light text-xl">/</span>
+                <div className="relative w-full">
+                  <Input
+                    id="bloodPressureDia"
+                    name="bloodPressureDia"
+                    type="number"
+                    placeholder="DIA"
+                    value={vitals.bloodPressureDia}
+                    onChange={handleChange}
+                    className={`h-11 transition-all duration-300 border-2 text-center font-bold ${getVitalColor("bloodPressureDia", vitals.bloodPressureDia)}`}
+                  />
+                  <span className="absolute right-2 top-1 text-[8px] font-bold text-gray-400 uppercase">
+                    Dia
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">
               <Label
                 htmlFor="o2Saturation"
-                className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1.5"
+                className="text-xs font-bold text-gray-500 uppercase flex items-center justify-between"
               >
-                <Wind className="w-3.5 h-3.5 text-blue-500" />
-                O2 Saturation
+                <div className="flex items-center gap-1.5">
+                  <Wind className="w-3.5 h-3.5 text-blue-500" /> O2 Saturation
+                </div>
+                <span className="text-[10px] text-red-500 font-bold">
+                  {getVitalMessage("o2Saturation", vitals.o2Saturation)}
+                </span>
               </Label>
               <div className="relative">
                 <Input
@@ -193,7 +288,7 @@ export function UpdateVitalsModal({
                   placeholder="98"
                   value={vitals.o2Saturation}
                   onChange={handleChange}
-                  className="h-11 bg-gray-50 border-gray-200 focus:bg-white"
+                  className={`h-11 transition-all duration-300 border-2 ${getVitalColor("o2Saturation", vitals.o2Saturation)}`}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
                   %

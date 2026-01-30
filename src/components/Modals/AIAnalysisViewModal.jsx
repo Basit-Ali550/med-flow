@@ -76,21 +76,24 @@ export function AIAnalysisViewModal({ isOpen, onClose, patient }) {
 
           <div className="space-y-6">
             {/* Reasoning */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+            <div className="bg-white rounded-xl border border-green-200 shadow-sm overflow-hidden">
+              <div className="bg-green-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
                 <Activity className="w-4 h-4 text-gray-500" />
                 <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">
                   Clinical Reasoning
                 </span>
               </div>
-              <div className="p-5 text-gray-700 leading-relaxed">
+              <div className="p-5 bg-green-50 text-gray-700 leading-relaxed">
                 {reasoning}
               </div>
             </div>
 
             {/* Recommendations */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+            <div
+              className="bg-pur
+             rounded-xl border border-purple-200 shadow-sm overflow-hidden"
+            >
+              <div className="bg-purple-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-gray-500" />
                 <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">
                   Recommended Actions
