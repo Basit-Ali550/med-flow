@@ -23,21 +23,31 @@ export function getWaitTimeMinutes(registeredAt) {
 }
 
 /**
- * Format wait time (e.g., "5m", "2h", "1d")
+ * Format wait time (e.g., "5m", "2h 30m", "1d")
  */
 export function formatWaitTime(registeredAt) {
   if (!registeredAt) return "0m";
-  
+
   const mins = getWaitTimeMinutes(registeredAt);
 
   if (mins < 60) {
     return `${mins}m`;
   } else if (mins < 1440) {
     const hours = Math.floor(mins / 60);
-    return `${hours}h`;
+    const m = mins % 60;
+    return `${hours}h ${m}m`;
   } else {
     const days = Math.floor(mins / 1440);
     return `${days}d`;
   }
 }
 
+/**
+ * Convert Celsius to Fahrenheit and format to 1 decimal
+ */
+export function cToF(celsius) {
+  if (!celsius && celsius !== 0) return "";
+  const val = Number(celsius);
+  if (isNaN(val)) return "";
+  return ((val * 9) / 5 + 32).toFixed(1);
+}

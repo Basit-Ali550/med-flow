@@ -17,7 +17,7 @@ export function usePatients() {
         sortBy: 'registeredAt',
         sortOrder: 'desc'
       });
-      
+
       setItems(data.data.patients || []);
     } catch (error) {
       handleClientError(error);
@@ -30,9 +30,11 @@ export function usePatients() {
     fetchPatients();
   }, [fetchPatients]);
 
-  const updatePatientStatus = async (patientId, newStatus) => {
+  const updatePatient = async (patientId, updates) => {
     try {
-      await patientsApi.patch(patientId, { status: newStatus });
+      // Support both string (legacy status update) and object (full patch)
+      const payload = typeof updates === 'string' ? { status: updates } : updates;
+      await patientsApi.patch(patientId, payload);
       return true;
     } catch (error) {
       handleClientError(error);
@@ -57,9 +59,8 @@ export function usePatients() {
     setItems,
     isLoading,
     refreshPatients: fetchPatients,
-    updatePatientStatus,
+    updatePatientStatus: updatePatient, // Legacy alias
+    updatePatient, // New flexible function
     deletePatient
   };
 }
-
-

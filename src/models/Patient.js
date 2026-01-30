@@ -172,6 +172,14 @@ const patientSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    aiAnalysis: {
+      type: String,
+      trim: true,
+    },
+    recommendedActions: {
+      type: String,
+      trim: true,
+    },
 
     // Additional flags
     isEmergency: {

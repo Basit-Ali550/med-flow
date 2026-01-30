@@ -70,6 +70,7 @@ export default function PatientForm({
 
   return (
     <Formik
+      enableReinitialize
       initialValues={initialValues}
       validationSchema={validationSchema}
       onSubmit={onSubmit}
@@ -177,9 +178,8 @@ export default function PatientForm({
                   setFieldValue("painLevel", parseInt(e.target.value))
                 }
                 style={{
-                  background: `linear-gradient(to right, #0d9488 ${
-                    (values.painLevel / 10) * 100
-                  }%, #e5e7eb ${(values.painLevel / 10) * 100}%)`,
+                  background: `linear-gradient(to right, #0d9488 ${(values.painLevel / 10) * 100
+                    }%, #e5e7eb ${(values.painLevel / 10) * 100}%)`,
                 }}
                 className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-teal-600 border-none outline-none"
               />
