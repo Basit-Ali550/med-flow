@@ -22,11 +22,11 @@ export function DeleteModal({
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[400px] p-6 rounded-3xl! gap-0 overflow-hidden bg-white border-0 shadow-2xl">
+      <DialogContent className="sm:max-w-xl p-6 rounded-xl gap-0 overflow-hidden bg-white border-0 shadow-2xl">
         <div className="flex flex-col items-center text-center">
           {/* Icon Circle */}
-          <div className="w-20 h-20 bg-gray-900 rounded-full flex items-center justify-center mb-6 shadow-sm">
-            <Trash2 className="w-10 h-10 text-white" strokeWidth={2.5} />
+          <div className="w-44 h-44 border-4 border-gray-900 rounded-full flex items-center justify-center mb-6 shadow-sm">
+            <Trash2 className="w-20 h-20 text-gray-900" strokeWidth={2.5} />
           </div>
 
           <DialogHeader className="mb-4 space-y-3">
@@ -38,7 +38,7 @@ export function DeleteModal({
             </DialogDescription>
           </DialogHeader>
 
-          <DialogFooter className="flex w-full gap-3 mt-4 sm:justify-center sm:space-x-0">
+          <DialogFooter className="flex w-[200px] gap-3 mt-4 justify-end">
             <Button
               variant="outline"
               onClick={onClose}

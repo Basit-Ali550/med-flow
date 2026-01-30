@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Nurse from '@/models/Nurse';
-import { generateToken, successResponse, errorResponse } from '@/lib/auth';
+import { generateToken, successResponse, getAuthCookieConfig } from '@/lib/auth';
+import { handleApiError, AppError } from '@/lib/error-handler';
 
 /**
  * POST /api/auth/login
@@ -11,37 +11,29 @@ export async function POST(request) {
   try {
     await dbConnect();
     
-    const body = await request.json();
-    const { username, password } = body;
+    const { username, password } = await request.json();
     
     // Validate input
     if (!username || !password) {
-      return errorResponse('Username/email and password are required', 400);
+      throw new AppError('Username/email and password are required', 400);
     }
     
-    // Find nurse by username OR email (include password for comparison)
-    // This allows users to login with either their username or email
+    // Find nurse by username OR email
     const nurse = await Nurse.findOne({
-      $or: [
-        { username: username },
-        { email: username.toLowerCase() }
-      ]
+      $or: [{ username }, { email: username.toLowerCase() }]
     }).select('+password');
     
     if (!nurse) {
-      return errorResponse('Invalid credentials', 401);
+      throw new AppError('Invalid credentials', 401);
     }
     
-    // Check if nurse is active
     if (!nurse.isActive) {
-      return errorResponse('Account is deactivated. Please contact admin.', 401);
+      throw new AppError('Account is deactivated. Please contact admin.', 401);
     }
     
-    // Compare passwords
     const isPasswordValid = await nurse.comparePassword(password);
-    
     if (!isPasswordValid) {
-      return errorResponse('Invalid credentials', 401);
+      throw new AppError('Invalid credentials', 401);
     }
     
     // Update last login
@@ -58,32 +50,21 @@ export async function POST(request) {
     });
     
     // Create response with cookie
-    const response = successResponse(
-      {
-        nurse: {
-          id: nurse._id,
-          username: nurse.username,
-          email: nurse.email,
-          fullName: nurse.fullName,
-          department: nurse.department,
-        },
-        token,
-      },
-      'Login successful'
-    );
+    const nurseData = {
+      id: nurse._id,
+      username: nurse.username,
+      email: nurse.email,
+      fullName: nurse.fullName,
+      department: nurse.department,
+    };
     
-    // Set HTTP-only cookie for additional security
-    response.cookies.set('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: '/',
-    });
+    const response = successResponse({ nurse: nurseData, token }, 'Login successful');
+    response.cookies.set('token', token, getAuthCookieConfig());
     
     return response;
   } catch (error) {
-    console.error('Login error:', error);
-    return errorResponse('Internal server error', 500);
+    return handleApiError(error);
   }
 }
+
+

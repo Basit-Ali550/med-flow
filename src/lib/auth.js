@@ -17,36 +17,36 @@ export function generateToken(payload) {
 export function verifyToken(token) {
   try {
     return jwt.verify(token, JWT_SECRET);
-  } catch (error) {
+  } catch {
     return null;
   }
 }
 
 /**
- * Extract token from request headers
+ * Parse cookies from cookie header string
+ */
+function parseCookies(cookieHeader) {
+  if (!cookieHeader) return {};
+  return Object.fromEntries(
+    cookieHeader.split(';').map(cookie => {
+      const [key, ...rest] = cookie.trim().split('=');
+      return [key, rest.join('=')];
+    })
+  );
+}
+
+/**
+ * Extract token from request headers (Bearer token or cookie)
  */
 export function getTokenFromRequest(request) {
   const authHeader = request.headers.get('authorization');
   
-  if (authHeader && authHeader.startsWith('Bearer ')) {
+  if (authHeader?.startsWith('Bearer ')) {
     return authHeader.substring(7);
   }
   
-  // Also check cookies
-  const cookieHeader = request.headers.get('cookie');
-  if (cookieHeader) {
-    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
-      const [key, value] = cookie.trim().split('=');
-      acc[key] = value;
-      return acc;
-    }, {});
-    
-    if (cookies.token) {
-      return cookies.token;
-    }
-  }
-  
-  return null;
+  const cookies = parseCookies(request.headers.get('cookie'));
+  return cookies.token || null;
 }
 
 /**
@@ -73,38 +73,22 @@ export async function authMiddleware(request) {
     };
   }
   
-  return {
-    success: true,
-    user: decoded,
-  };
+  return { success: true, user: decoded };
 }
 
 /**
  * Create unauthorized response
  */
 export function unauthorizedResponse(message = 'Unauthorized') {
-  return NextResponse.json(
-    {
-      success: false,
-      message,
-    },
-    { status: 401 }
-  );
+  return NextResponse.json({ success: false, message }, { status: 401 });
 }
 
 /**
  * Create error response
  */
 export function errorResponse(message, status = 500, errors = null) {
-  const response = {
-    success: false,
-    message,
-  };
-  
-  if (errors) {
-    response.errors = errors;
-  }
-  
+  const response = { success: false, message };
+  if (errors) response.errors = errors;
   return NextResponse.json(response, { status });
 }
 
@@ -112,12 +96,19 @@ export function errorResponse(message, status = 500, errors = null) {
  * Create success response
  */
 export function successResponse(data, message = 'Success', status = 200) {
-  return NextResponse.json(
-    {
-      success: true,
-      message,
-      data,
-    },
-    { status }
-  );
+  return NextResponse.json({ success: true, message, data }, { status });
 }
+
+/**
+ * Get cookie configuration for auth cookies
+ */
+export function getAuthCookieConfig(maxAge = 7 * 24 * 60 * 60) {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge,
+    path: '/',
+  };
+}
+

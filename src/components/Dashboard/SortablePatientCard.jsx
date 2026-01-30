@@ -5,7 +5,14 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { PatientCard } from "./PatientCard";
 
-export function SortablePatientCard({ patient, onEdit, onDelete, onClick }) {
+export function SortablePatientCard({
+  patient,
+  onEdit,
+  onDelete,
+  onHistory,
+  onVitals,
+  onClick,
+}) {
   const {
     attributes,
     listeners,
@@ -28,8 +35,9 @@ export function SortablePatientCard({ patient, onEdit, onDelete, onClick }) {
         patient={patient}
         onEdit={(p) => onEdit(p)}
         onDelete={(p) => onDelete(p)}
+        onHistory={(p) => onHistory?.(p)}
+        onVitals={(p) => onVitals?.(p)}
         onClick={(p) => onClick?.(p)}
-        // Pass drag props for the whole card
         dragHandleProps={{ ...attributes, ...listeners }}
       />
     </div>

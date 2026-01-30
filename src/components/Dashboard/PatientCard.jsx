@@ -1,78 +1,42 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { cn, calculateAge, formatWaitTime } from "@/lib/utils";
 import {
   GripHorizontal,
   Pencil,
   Trash2,
   CheckCircle,
   AlertCircle,
+  History,
+  Activity,
 } from "lucide-react";
 
 export const PatientCard = ({
   patient,
   onEdit,
   onDelete,
+  onHistory,
+  onVitals,
   onClick,
   dragHandleProps,
   isOverlay,
 }) => {
-  const [waitTimeDisplay, setWaitTimeDisplay] = React.useState("...");
-  const [ageDisplay, setAgeDisplay] = React.useState("N/A");
+  const [waitTimeDisplay, setWaitTimeDisplay] = useState(
+    formatWaitTime(patient.registeredAt),
+  );
+  const ageDisplay = calculateAge(patient.dateOfBirth);
 
-  // Calculate stats in useEffect to avoid impure render (Date.now())
-  // and hydration mismatches.
-  React.useEffect(() => {
-    const now = Date.now();
-
-    // 1. Calculate Age
-    if (patient.dateOfBirth) {
-      const diff = now - new Date(patient.dateOfBirth).getTime();
-      const age = Math.abs(new Date(diff).getUTCFullYear() - 1970);
-      setAgeDisplay(age);
-    }
-
-    // 2. Calculate Wait Time with Formatting
-    if (patient.registeredAt) {
-      const diffMs = now - new Date(patient.registeredAt).getTime();
-      const mins = Math.floor(diffMs / 60000);
-
-      if (mins < 60) {
-        setWaitTimeDisplay(`${mins}m`);
-      } else if (mins < 1440) {
-        // Less than 24 hours
-        const hours = Math.floor(mins / 60);
-        setWaitTimeDisplay(`${hours}h`);
-      } else {
-        const days = Math.floor(mins / 1440);
-        setWaitTimeDisplay(`${days}d`);
-      }
-    } else {
-      setWaitTimeDisplay("0m");
-    }
-
-    // Optional: Set up an interval to update wait time every minute
+  useEffect(() => {
+    // Update wait time every minute
     const interval = setInterval(() => {
-      // Re-run the logic? For simplicity in this component structure,
-      // we can just rely on the initial load or dependency changes,
-      // OR trigger a re-render.
-      // Given the "Dashboard" usage, live update is nice.
-      // We'll just copy logic or abstract it.
-      // keeping it simple: just update logic inside interval
-      const currentNow = Date.now();
-      if (patient.registeredAt) {
-        const dMs = currentNow - new Date(patient.registeredAt).getTime();
-        const m = Math.floor(dMs / 60000);
-        if (m < 60) setWaitTimeDisplay(`${m}m`);
-        else if (m < 1440) setWaitTimeDisplay(`${Math.floor(m / 60)}h`);
-        else setWaitTimeDisplay(`${Math.floor(m / 1440)}d`);
-      }
+      setWaitTimeDisplay(formatWaitTime(patient.registeredAt));
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [patient.dateOfBirth, patient.registeredAt]);
+  }, [patient.registeredAt]);
 
   const hasVitals =
     patient.vitalSigns && Object.keys(patient.vitalSigns).length > 0;
@@ -80,17 +44,19 @@ export const PatientCard = ({
 
   return (
     <Card
-      {...dragHandleProps} // Applied to the entire card
+      {...dragHandleProps}
       onClick={() => onClick?.(patient)}
-      className={`p-4 border shadow-sm transition-all group relative
-        cursor-pointer active:cursor-grabbing hover:border-teal-400
-        ${isOverlay ? "shadow-2xl rotate-2 scale-105 bg-white border-teal-500" : "bg-white border-gray-100"}
-      `}
+      className={cn(
+        "p-4 bordershadow-sm  rounded-lg transition-all group relative cursor-pointer active:cursor-grabbing hover:border-teal-400",
+        isOverlay
+          ? "shadow-2xl rotate-2 scale-105 bg-white border-teal-500"
+          : "bg-white border-[#E4E4E4]",
+      )}
     >
-      <div className="flex gap-3">
-        {/* Visual Grip Handle */}
-        <div className="mt-1 text-gray-300 group-hover:text-teal-500 transition-colors">
-          <GripHorizontal className="w-5 h-5" />
+      <div className="flex items-center gap-3">
+        {/* Grip Handle */}
+        <div className="mb-1 text-gray-300 group-hover:text-teal-500 transition-colors">
+          <span className="font-semibold text-gray-900 shrink-0">=</span>
         </div>
 
         {/* Content */}
@@ -106,30 +72,33 @@ export const PatientCard = ({
               </h3>
             </div>
 
-            {hasVitals ? (
-              <Badge
-                variant="outline"
-                className="bg-teal-50 text-teal-600 border-teal-200 text-[10px] px-2 py-0.5 font-medium flex gap-1 items-center"
-              >
-                <CheckCircle className="w-3 h-3" /> Vitals provided
-              </Badge>
-            ) : (
-              <Badge
-                variant="outline"
-                className="bg-red-50 text-red-500 border-red-200 text-[10px] px-2 py-0.5 font-medium flex gap-1 items-center"
-              >
-                <AlertCircle className="w-3 h-3" /> Missing Vitals
-              </Badge>
-            )}
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-[10px] px-2 py-0.5 font-medium flex gap-1 items-center",
+                hasVitals
+                  ? "bg-teal-50 text-teal-600 border-teal-200"
+                  : "bg-red-50 text-red-500 border-red-200",
+              )}
+            >
+              {hasVitals ? (
+                <>
+                  <CheckCircle className="w-3 h-3" /> Vitals provided
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="w-3 h-3" /> Missing Vitals
+                </>
+              )}
+            </Badge>
           </div>
 
           {/* Symptoms */}
           <div className="text-sm text-gray-600 mb-3 flex gap-2">
-            <span className="font-semibold text-gray-900 shrink-0">=</span>
             <span className="font-semibold text-gray-700 shrink-0">
               Symptoms:
             </span>
-            <span className="truncate">{patient.symptoms}</span>
+            <span className="line-clamp-2 break-words">{patient.symptoms}</span>
           </div>
 
           {/* Footer Stats & Actions */}
@@ -137,7 +106,12 @@ export const PatientCard = ({
             <div className="flex gap-2">
               <Badge
                 variant="secondary"
-                className={`${isHighPain ? "bg-red-100 text-red-700" : "bg-teal-50 text-teal-700"} border-transparent rounded px-2`}
+                className={cn(
+                  "border-transparent rounded px-2",
+                  isHighPain
+                    ? "bg-red-100 text-red-700"
+                    : "bg-teal-50 text-teal-700",
+                )}
               >
                 Pain: {patient.painLevel}/10
               </Badge>
@@ -149,28 +123,44 @@ export const PatientCard = ({
               </Badge>
             </div>
 
-            {/* Action Buttons with Stop Propagation */}
+            {/* Actions */}
             <div className="flex gap-1 relative z-10">
-              <button
-                onPointerDown={(e) => e.stopPropagation()}
+              <ActionButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onHistory?.(patient);
+                }}
+                icon={<History className="w-4 h-4" />}
+                className="hover:text-blue-600"
+                title="Medical History"
+              />
+              <ActionButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onVitals?.(patient);
+                }}
+                icon={<Activity className="w-4 h-4" />}
+                className="hover:text-orange-600"
+                title="Update Vitals"
+              />
+              <ActionButton
                 onClick={(e) => {
                   e.stopPropagation();
                   onEdit?.(patient);
                 }}
-                className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-gray-50 rounded-md transition-colors cursor-pointer"
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-              <button
-                onPointerDown={(e) => e.stopPropagation()}
+                icon={<Pencil className="w-4 h-4" />}
+                className="hover:text-teal-600"
+                title="Edit Details"
+              />
+              <ActionButton
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete?.(patient);
                 }}
-                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-gray-50 rounded-md transition-colors cursor-pointer"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+                icon={<Trash2 className="w-4 h-4" />}
+                className="hover:text-red-600"
+                title="Delete"
+              />
             </div>
           </div>
         </div>
@@ -178,3 +168,16 @@ export const PatientCard = ({
     </Card>
   );
 };
+
+const ActionButton = ({ onClick, icon, className }) => (
+  <button
+    onPointerDown={(e) => e.stopPropagation()}
+    onClick={onClick}
+    className={cn(
+      "p-1.5 text-gray-400 hover:bg-gray-50 rounded-md transition-colors cursor-pointer",
+      className,
+    )}
+  >
+    {icon}
+  </button>
+);

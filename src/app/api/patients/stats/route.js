@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Patient from '@/models/Patient';
-import { successResponse, errorResponse } from '@/lib/auth';
+import { successResponse } from '@/lib/auth';
+import { PATIENT_STATUS, TRIAGE_LEVELS } from '@/lib/constants';
+import { handleApiError } from '@/lib/error-handler';
 
 /**
  * GET /api/patients/stats
@@ -28,7 +29,7 @@ export async function GET(request) {
       totalPatients,
       waitingPatients,
       inProgressPatients,
-      completedPatients,
+      completedToday,
       triageLevelStats,
       statusStats,
       todayRegistrations,
@@ -38,15 +39,15 @@ export async function GET(request) {
       Patient.countDocuments(dateFilter),
       
       // Waiting patients
-      Patient.countDocuments({ ...dateFilter, status: 'Waiting' }),
+      Patient.countDocuments({ ...dateFilter, status: PATIENT_STATUS.WAITING }),
       
       // In progress patients
-      Patient.countDocuments({ ...dateFilter, status: 'In Progress' }),
+      Patient.countDocuments({ ...dateFilter, status: PATIENT_STATUS.IN_PROGRESS }),
       
-      // Completed patients (today)
+      // Completed/Discharged patients (in date range)
       Patient.countDocuments({ 
         ...dateFilter, 
-        status: { $in: ['Completed', 'Discharged'] } 
+        status: { $in: [PATIENT_STATUS.COMPLETED, PATIENT_STATUS.DISCHARGED] } 
       }),
       
       // Stats by triage level
@@ -81,7 +82,7 @@ export async function GET(request) {
       
       // Average wait time for waiting patients
       Patient.aggregate([
-        { $match: { status: 'Waiting' } },
+        { $match: { status: PATIENT_STATUS.WAITING } },
         {
           $project: {
             waitTime: {
@@ -101,29 +102,20 @@ export async function GET(request) {
       ]),
     ]);
     
-    // Format triage level stats
-    const triageLevels = {
-      Critical: 0,
-      Urgent: 0,
-      'Semi-Urgent': 0,
-      'Non-Urgent': 0,
-      Pending: 0,
-    };
+    // Format triage level stats using constants
+    const triageLevels = Object.fromEntries(
+      Object.values(TRIAGE_LEVELS).map(level => [level, 0])
+    );
     triageLevelStats.forEach((stat) => {
       if (stat._id && triageLevels.hasOwnProperty(stat._id)) {
         triageLevels[stat._id] = stat.count;
       }
     });
     
-    // Format status stats
-    const statuses = {
-      Waiting: 0,
-      'In Progress': 0,
-      Completed: 0,
-      Discharged: 0,
-      Transferred: 0,
-      Cancelled: 0,
-    };
+    // Format status stats using constants
+    const statuses = Object.fromEntries(
+      Object.values(PATIENT_STATUS).map(status => [status, 0])
+    );
     statusStats.forEach((stat) => {
       if (stat._id && statuses.hasOwnProperty(stat._id)) {
         statuses[stat._id] = stat.count;
@@ -135,7 +127,7 @@ export async function GET(request) {
         totalPatients,
         waitingPatients,
         inProgressPatients,
-        completedPatients,
+        completedToday,
         todayRegistrations,
         averageWaitTime: averageWaitTime[0]?.avgWaitTime 
           ? Math.round(averageWaitTime[0].avgWaitTime) 
@@ -145,7 +137,8 @@ export async function GET(request) {
       statuses,
     });
   } catch (error) {
-    console.error('Get stats error:', error);
-    return errorResponse('Failed to fetch statistics', 500);
+    return handleApiError(error);
   }
 }
+
+

@@ -2,54 +2,32 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import PatientForm from "@/components/PatientForm/PatientForm";
-
+import { patientsApi } from "@/lib/api";
+import { handleClientError } from "@/lib/error-handler";
 
 export default function PatientRegistration() {
   const router = useRouter();
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
-      // For patient registration, we use the same API
-      const response = await fetch('/api/patients', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(values),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to submit registration');
-      }
-
+      await patientsApi.create(values);
       toast.success("Registration submitted successfully!");
-      
-      setTimeout(() => {
-        router.push("/patient/success");
-      }, 1500);
+      setTimeout(() => router.push("/patient/success"), 1500);
     } catch (error) {
-      toast.error(error.message || "Registration failed. Please try again.");
+      handleClientError(error);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleCancel = () => {
-    router.push("/");
-  };
+
+  const handleCancel = () => router.push("/");
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Toaster position="top-center" richColors />
-
-      {/* Header provided by Layout */}
-
-      {/* Main Content */}
-      <main className="max-w-3xl mx-auto py-8 px-4">
+    <div className="min-h-screen bg-[#fff]">
+      <main className="max-w-7xl mx-auto py-8 px-4">
         <PatientForm
           onSubmit={handleSubmit}
           onCancel={handleCancel}
@@ -60,3 +38,4 @@ export default function PatientRegistration() {
     </div>
   );
 }
+

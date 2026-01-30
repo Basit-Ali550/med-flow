@@ -6,9 +6,6 @@ import { Header } from "./Header";
 
 export function AppHeader() {
   const pathname = usePathname();
-
-  // Define route configurations
-  // We can use precise matches or checks
   let config = null;
 
   if (pathname === "/nurse/dashboard") {
@@ -36,9 +33,6 @@ export function AppHeader() {
       showMenu: false,
     };
   }
-  // Add other pages if needed, e.g. Login might not need header
-  // or return null to hide header
-
   if (!config) {
     return null;
   }

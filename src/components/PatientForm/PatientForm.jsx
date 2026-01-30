@@ -15,7 +15,10 @@ const baseSchema = {
     .min(2, "Name must be at least 2 characters")
     .required("Full name is required"),
   dateOfBirth: Yup.date()
-    .max(new Date(), "Date of birth cannot be in the future")
+    .max(
+      new Date(new Date().setDate(new Date().getDate() - 1)),
+      "Date of birth must be at least 1 day before today",
+    )
     .required("Date of birth is required"),
   gender: Yup.string(),
   symptoms: Yup.string()
@@ -60,7 +63,6 @@ export default function PatientForm({
   showVitalSigns = false,
   submitLabel = "Submit",
 }) {
-  // Construct validation schema based on props
   const validationSchema = Yup.object({
     ...baseSchema,
     ...(showVitalSigns ? vitalSignsSchema : {}),
@@ -75,155 +77,162 @@ export default function PatientForm({
       {({ values, isSubmitting, setFieldValue }) => (
         <Form>
           {/* Personal Information */}
-          <Card className="p-6 mb-8 border-none shadow-sm ring-1 ring-gray-200">
-            <div className="flex items-center gap-2.5 mb-5">
-              <User className="w-5 h-5 text-teal-600" />
-              <h2 className="text-xl font-semibold text-gray-900">
-                Personal information
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div>
-                <Label htmlFor="fullName">Full Name *</Label>
-                <Field
-                  as={Input}
-                  id="fullName"
-                  name="fullName"
-                  placeholder="Enter full name"
-                  className="mt-2"
-                />
-                <ErrorMessage
-                  name="fullName"
-                  component="p"
-                  className="text-red-500 text-sm mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                <Field
-                  as={Input}
-                  id="dateOfBirth"
-                  name="dateOfBirth"
-                  type="date"
-                  className="mt-2"
-                />
-                <ErrorMessage
-                  name="dateOfBirth"
-                  component="p"
-                  className="text-red-500 text-sm mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="gender">Gender</Label>
-                <Field
-                  as="select"
-                  id="gender"
-                  name="gender"
-                  className="mt-2 w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                >
-                  <option value="">No Selection</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </Field>
-              </div>
-            </div>
-          </Card>
 
-          {/* Current Condition */}
-          <Card className="p-6 mb-8 border-none shadow-sm ring-1 ring-gray-200">
-            <div className="flex items-center gap-2.5 mb-5">
-              <Activity className="w-5 h-5 text-teal-600" />
-              <h2 className="text-xl font-semibold text-gray-900">
-                Current Condition
-              </h2>
-            </div>
-            <div className="mb-5">
-              <Label htmlFor="symptoms">Main symptoms *</Label>
+          <div className="flex items-center border-b pb-2 gap-2.5 mb-5">
+            <span className="bg-[#EFFDFA] p-2 rounded-full">
+              <User className="w-5 h-5 text-teal-600" />
+            </span>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Personal information
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
+            <div>
+              <Label htmlFor="fullName">Full Name *</Label>
               <Field
-                as="textarea"
-                id="symptoms"
-                name="symptoms"
-                placeholder="Describe symptoms in detail..."
-                rows={4}
-                className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                as={Input}
+                id="fullName"
+                name="fullName"
+                placeholder="Enter full name"
+                className="mt-2"
               />
               <ErrorMessage
-                name="symptoms"
+                name="fullName"
                 component="p"
                 className="text-red-500 text-sm mt-1"
               />
             </div>
-            <div className="mb-5">
-              <Label htmlFor="painLevel">
-                Pain level ({values.painLevel}/10)
-              </Label>
-              <div className="mt-3">
-                <input
-                  type="range"
-                  id="painLevel"
-                  name="painLevel"
-                  min="0"
-                  max="10"
-                  value={values.painLevel}
-                  onChange={(e) =>
-                    setFieldValue("painLevel", parseInt(e.target.value))
-                  }
-                  className="w-full accent-teal-600 h-2 cursor-pointer"
-                />
-                <div className="flex justify-between text-xs text-gray-500 mt-2 font-medium">
-                  <span>No Pain (0)</span>
-                  <span>Severe Pain (10)</span>
-                </div>
-              </div>
+            <div>
+              <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+              <Field
+                as={Input}
+                id="dateOfBirth"
+                name="dateOfBirth"
+                type="date"
+                className="mt-2"
+              />
+              <ErrorMessage
+                name="dateOfBirth"
+                component="p"
+                className="text-red-500 text-sm mt-1"
+              />
             </div>
-          </Card>
+            <div>
+              <Label htmlFor="gender">Gender</Label>
+              <Field
+                as="select"
+                id="gender"
+                name="gender"
+                className="mt-2 w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <option value="">No Selection</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </Field>
+            </div>
+          </div>
 
-          {/* Medical History */}
-          <Card className="p-6 mb-8 border-none shadow-sm ring-1 ring-gray-200">
-            <div className="flex items-center gap-2.5 mb-5">
+          {/* Current Condition */}
+          <div className="flex items-center border-b pb-2 gap-2.5 mb-6">
+            <span className="bg-[#EFFDFA] p-2 rounded-full">
+              <Activity className="w-5 h-5 text-teal-600" />
+            </span>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Current Condition
+            </h2>
+          </div>
+          <div className="mb-5">
+            <Label htmlFor="symptoms">Main symptoms *</Label>
+            <Field
+              as="textarea"
+              id="symptoms"
+              name="symptoms"
+              placeholder="Describe symptoms in detail..."
+              rows={4}
+              className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            />
+            <ErrorMessage
+              name="symptoms"
+              component="p"
+              className="text-red-500 text-sm mt-1"
+            />
+          </div>
+          <div className="mb-5">
+            <Label htmlFor="painLevel">
+              Pain level ({values.painLevel}/10)
+            </Label>
+            <div className="mt-3 flex items-center gap-4 p-2 border-0 rounded-lg">
+              <span className="text-xs text-gray-500 font-medium whitespace-nowrap">
+                No Pain (0)
+              </span>
+              <input
+                type="range"
+                id="painLevel"
+                name="painLevel"
+                min="0"
+                max="10"
+                value={values.painLevel}
+                onChange={(e) =>
+                  setFieldValue("painLevel", parseInt(e.target.value))
+                }
+                style={{
+                  background: `linear-gradient(to right, #0d9488 ${
+                    (values.painLevel / 10) * 100
+                  }%, #e5e7eb ${(values.painLevel / 10) * 100}%)`,
+                }}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-teal-600 border-none outline-none"
+              />
+              <span className="text-xs text-gray-500 font-medium whitespace-nowrap">
+                Severe Pain (10)
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center border-b pb-2 gap-2.5 my-5">
+            <span className="bg-[#EFFDFA] p-2 rounded-full">
               <Clipboard className="w-5 h-5 text-teal-600" />
-              <h2 className="text-xl font-semibold text-gray-900">
-                Medical history
-              </h2>
+            </span>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Medical history
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 gap-6">
+            <div>
+              <Label htmlFor="allergies">Allergies</Label>
+              <Field
+                as={Input}
+                id="allergies"
+                name="allergies"
+                placeholder="e.g. Penicillin"
+                className="mt-2"
+              />
             </div>
-            <div className="grid grid-cols-1 gap-5">
-              <div>
-                <Label htmlFor="allergies">Allergies</Label>
-                <Field
-                  as={Input}
-                  id="allergies"
-                  name="allergies"
-                  placeholder="e.g. Penicillin"
-                  className="mt-2"
-                />
-              </div>
-              <div>
-                <Label htmlFor="medications">Current Medications</Label>
-                <Field
-                  as={Input}
-                  id="medications"
-                  name="medications"
-                  placeholder="List current medications..."
-                  className="mt-2"
-                />
-              </div>
-              <div>
-                <Label htmlFor="chronicConditions">Chronic Conditions</Label>
-                <Field
-                  as={Input}
-                  id="chronicConditions"
-                  name="chronicConditions"
-                  placeholder="e.g. Diabetes, Hypertension"
-                  className="mt-2"
-                />
-              </div>
+            <div>
+              <Label htmlFor="medications">Current Medications</Label>
+              <Field
+                as={Input}
+                id="medications"
+                name="medications"
+                placeholder="List current medications..."
+                className="mt-2"
+              />
             </div>
-          </Card>
+            <div>
+              <Label htmlFor="chronicConditions">Chronic Conditions</Label>
+              <Field
+                as={Input}
+                id="chronicConditions"
+                name="chronicConditions"
+                placeholder="e.g. Diabetes, Hypertension"
+                className="mt-2"
+              />
+            </div>
+          </div>
 
           {/* Vital Signs - Only shown if requested */}
           {showVitalSigns && (
-            <Card className="p-6 mb-8 border-none shadow-sm ring-1 ring-gray-200 bg-teal-50/50">
+            <Card className="p-6 my-8 border-none shadow-sm ring-1 ring-gray-200 bg-teal-50/50">
               <div className="flex items-center gap-2.5 mb-5">
                 <Heart className="w-5 h-5 text-teal-600" />
                 <h2 className="text-xl font-semibold text-gray-900">
@@ -238,7 +247,7 @@ export default function PatientForm({
                     id="heartRate"
                     name="heartRate"
                     type="number"
-                    className="mt-2 bg-white"
+                    className="mt-2 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <div>
@@ -250,7 +259,7 @@ export default function PatientForm({
                       name="bloodPressureSys"
                       type="number"
                       placeholder="SYS"
-                      className="bg-white"
+                      className="bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <span className="text-gray-400">/</span>
                     <Field
@@ -259,7 +268,7 @@ export default function PatientForm({
                       name="bloodPressureDia"
                       type="number"
                       placeholder="DIA"
-                      className="bg-white"
+                      className="bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                 </div>
@@ -271,7 +280,7 @@ export default function PatientForm({
                     name="temperature"
                     type="number"
                     step="0.1"
-                    className="mt-2 bg-white"
+                    className="mt-2 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <div>
@@ -281,7 +290,7 @@ export default function PatientForm({
                     id="o2Saturation"
                     name="o2Saturation"
                     type="number"
-                    className="mt-2 bg-white"
+                    className="mt-2 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
               </div>
@@ -294,14 +303,14 @@ export default function PatientForm({
               type="button"
               variant="outline"
               onClick={onCancel}
-              className="px-8 py-2 rounded-full border-gray-300 hover:bg-gray-50"
+              className="px-8 py-2 rounded-full cursor-pointer border-gray-300 hover:bg-gray-50"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-2 rounded-full shadow-lg hover:shadow-xl transition-all"
+              className="bg-teal-600 hover:bg-teal-700 cursor-pointer text-white px-8 py-2 rounded-full shadow-lg hover:shadow-xl transition-all"
             >
               {isSubmitting ? "Submitting..." : submitLabel}
             </Button>

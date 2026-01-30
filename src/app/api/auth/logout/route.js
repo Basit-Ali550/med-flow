@@ -1,21 +1,12 @@
-import { NextResponse } from 'next/server';
-import { successResponse } from '@/lib/auth';
+import { successResponse, getAuthCookieConfig } from '@/lib/auth';
 
 /**
  * POST /api/auth/logout
  * Logout nurse by clearing the auth cookie
  */
-export async function POST(request) {
+export async function POST() {
   const response = successResponse(null, 'Logout successful');
-  
-  // Clear the auth cookie
-  response.cookies.set('token', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 0, // Expire immediately
-    path: '/',
-  });
-  
+  response.cookies.set('token', '', getAuthCookieConfig(0)); // maxAge: 0 expires immediately
   return response;
 }
+

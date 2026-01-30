@@ -1,13 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn } from "lucide-react";
-
+import {  Loader2, Eye, EyeOff } from "lucide-react";
+import { authApi, isAuthenticated } from "@/lib/api";
+import { handleClientError } from "@/lib/error-handler";
+import Image from "next/image";
+import Login from "@/assets/Icon/Login.svg"
 export default function NurseLogin() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -15,6 +18,17 @@ export default function NurseLogin() {
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.replace("/nurse/dashboard");
+    } else {
+      setIsCheckingAuth(false);
+    }
+  }, [router]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,51 +40,43 @@ export default function NurseLogin() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
+      const { data } = await authApi.login(formData);
 
       // Store token in localStorage for client-side access
-      if (data.data?.token) {
-        localStorage.setItem('token', data.data.token);
-        localStorage.setItem('nurse', JSON.stringify(data.data.nurse));
+      if (data?.token) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('nurse', JSON.stringify(data.nurse));
       }
 
-      toast.success(data.message || "Login successful!");
+      toast.success("Login successful!");
       
       // Redirect to dashboard
       setTimeout(() => {
         router.push("/nurse/dashboard");
       }, 1000);
     } catch (error) {
-      toast.error(error.message || "Login failed. Please check your credentials.");
+      handleClientError(error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-5">
-      <Toaster position="top-center" richColors />
-
-      {/* Login Icon */}
-      <div className="mb-8">
-        <LogIn className="w-16 h-16 text-teal-600" strokeWidth={1.5} />
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-5">
+      {/* Login Icon */}
+     <Image src={Login} alt="Logo" width={200} height={200} />
 
       {/* Login Form */}
-      <form className="w-full max-w-sm" onSubmit={handleSubmit}>
-        <div className="mb-5">
+      <form className="w-full max-w-xl" onSubmit={handleSubmit}>
+        <div className="my-12">
           <Label htmlFor="username">Username</Label>
           <Input
             id="username"
@@ -86,23 +92,36 @@ export default function NurseLogin() {
 
         <div className="mb-5">
           <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="Type in your password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            className="mt-1"
-          />
+          <div className="relative mt-1">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Type in your password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+            >
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
 
         <div className="flex justify-center mt-8">
           <Button
             type="submit"
             disabled={isLoading}
-            className="bg-teal-600 hover:bg-teal-700 px-8"
+            className="bg-teal-600 hover:bg-teal-700 px-8 cursor-pointer shadow-md shadow-teal-600/20 active:scale-95 transition-transform"
           >
             {isLoading ? "Logging in..." : "Login"}
           </Button>
@@ -111,3 +130,5 @@ export default function NurseLogin() {
     </div>
   );
 }
+
+
