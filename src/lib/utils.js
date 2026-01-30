@@ -51,3 +51,27 @@ export function cToF(celsius) {
   if (isNaN(val)) return "";
   return ((val * 9) / 5 + 32).toFixed(1);
 }
+
+export function isVitalAbnormal(type, value) {
+  if (value === undefined || value === null || value === "") return false;
+  const num = Number(value);
+  if (isNaN(num)) return false;
+
+  switch (type) {
+    case 'bloodPressureSys':
+      return num < 90 || num > 140;
+    case 'bloodPressureDia':
+      return num < 60 || num > 90;
+    case 'heartRate':
+      return num < 60 || num > 100;
+    case 'o2Saturation':
+      return num < 95;
+    case 'temperature': {
+      // Value is stored in Celsius, check range in Fahrenheit (97.0 - 99.5)
+      // 97 F = 36.11 C, 99.5 F = 37.5 C
+      const f = (num * 9) / 5 + 32;
+      return f < 97.0 || f > 99.5;
+    }
+    default: return false;
+  }
+}

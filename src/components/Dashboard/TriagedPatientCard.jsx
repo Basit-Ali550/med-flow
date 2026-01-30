@@ -3,23 +3,39 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cn, calculateAge, formatWaitTime, cToF } from "@/lib/utils";
+import { cn, calculateAge, formatWaitTime, cToF, isVitalAbnormal } from "@/lib/utils";
 import {
-    Brain,
     Pencil,
     Trash2,
+    Activity,
+    Pin,
+    History,
+    AlertTriangle,
     Heart,
     Thermometer,
-    Activity,
     Wind,
-    Lightbulb,
 } from "lucide-react";
+
+// Reusing the same helper since it's cleaner
+const VitalItem = ({ label, value, unit, icon }) => (
+    <div className="flex flex-col items-center">
+        <div className="flex items-center gap-1 text-[10px] text-gray-500 uppercase tracking-wide font-medium">
+            {icon} {label}
+        </div>
+        <div className="text-xs font-bold text-gray-900 mt-0.5">
+            {value}
+        </div>
+    </div>
+);
 
 export const TriagedPatientCard = ({
     patient,
     onEdit,
     onDelete,
     onVitals,
+    onHistory,
+    onPin, // Include onPin prop
+    onClick,
     dragHandleProps,
     isOverlay,
 }) => {
@@ -27,186 +43,134 @@ export const TriagedPatientCard = ({
         formatWaitTime(patient.registeredAt)
     );
     const ageDisplay = calculateAge(patient.dateOfBirth);
+    const vitals = patient.vitalSigns || {};
+    const hasVitals = vitals.bloodPressureSys || vitals.heartRate || vitals.temperature || vitals.o2Saturation;
 
     useEffect(() => {
         const interval = setInterval(() => {
             setWaitTimeDisplay(formatWaitTime(patient.registeredAt));
-        }, 60000); // Update every minute
+        }, 60000);
         return () => clearInterval(interval);
     }, [patient.registeredAt]);
-
-    const vitals = patient.vitalSigns || {};
-
-    // AI Analysis (Only show if present)
-    // AI Analysis (Only show if present)
-    let aiAnalysis = patient.aiAnalysis || patient.nurseNotes;
-
-    // Safety check if aiAnalysis is an object (causing the "Objects are not valid as a React child" error)
-    if (typeof aiAnalysis === 'object' && aiAnalysis !== null) {
-        aiAnalysis = aiAnalysis.reasoning || aiAnalysis.description || "AI Analysis available";
-    }
-
-    // Vitals Display Helpers
-    const bpDisplay = vitals.bloodPressureSys && vitals.bloodPressureDia
-        ? `${vitals.bloodPressureSys}/${vitals.bloodPressureDia}`
-        : "--/--";
-
-    const tempDisplay = vitals.temperature
-        ? `${cToF(vitals.temperature)}°F`
-        : "--°F";
 
     return (
         <Card
             {...dragHandleProps}
-            // Ensure onClick is passed if parent logic requires it (e.g. for selection)
+            onClick={() => onClick?.(patient)}
             className={cn(
-                "p-5 rounded-2xl transition-all group relative border cursor-default bg-white",
-                isOverlay ? "shadow-2xl rotate-1 scale-105 border-teal-500" : "border-red-100 shadow-sm hover:shadow-md"
+                "p-4 rounded-xl transition-all group relative border-l-4 border-y border-r border-[#e2e8f0] cursor-pointer hover:shadow-md bg-white select-none",
+                isOverlay ? "shadow-2xl rotate-2 scale-105 border-teal-500 z-50" : "border-l-teal-500",
+                patient.isPinned && "border-l-orange-500 ring-1 ring-orange-100 bg-orange-50/10" // Visual cue for pinned
             )}
         >
-            {/* Header Section */}
-            <div className="flex justify-between items-start mb-3">
-                <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 font-bold text-lg">
-                        {patient.fullName.charAt(0)}
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-gray-900 text-base leading-tight">
-                            {patient.fullName}
-                        </h3>
-                        <p className="text-gray-500 text-xs">
-                            {patient.gender} • {ageDisplay} years
-                        </p>
-                    </div>
+            {/* 1. Header Row: Name, Info, Pin Action */}
+            <div className="flex justify-between items-start mb-2">
+                <div className="flex items-baseline gap-2">
+                    <h3 className="font-bold text-gray-900 text-base">
+                        {patient.fullName}
+                    </h3>
+                    <span className="text-gray-400 text-sm font-normal">
+                        ({ageDisplay}y, {patient.gender})
+                    </span>
+                    {/* Visual Pin Indicator for quick scan */}
+                    {patient.isPinned && <Pin className="w-3 h-3 text-orange-500 fill-orange-500 self-center ml-1" />}
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-1">
-                    <button onClick={(e) => { e.stopPropagation(); onVitals?.(patient); }} className="p-1.5 rounded-lg border border-gray-200 text-violet-500 hover:bg-violet-50 transition-colors">
-                        <Heart className="w-4 h-4" />
-                    </button>
-                    {/* Placeholder for AI/Analysis action if needed */}
-                    <button className="p-1.5 rounded-lg border border-gray-200 text-violet-500 hover:bg-violet-50 transition-colors">
-                        <Activity className="w-4 h-4" />
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); onEdit?.(patient); }} className="p-1.5 rounded-lg border border-gray-200 text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors">
-                        <Pencil className="w-4 h-4" />
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); onDelete?.(patient); }} className="p-1.5 rounded-lg border border-gray-200 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
+                {/* Status/Vitals Badge if needed, or just cleaner layout */}
+                {!hasVitals && (
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 border border-red-100">
+                        <AlertTriangle className="w-3 h-3 text-red-500" />
+                        <span className="text-[10px] uppercase font-bold text-red-500 tracking-wide">Missing Vitals</span>
+                    </div>
+                )}
             </div>
 
-            {/* Main Complaint */}
-            <div className="mb-4">
-                <p className="text-sm text-gray-700 font-medium">
-                    : {patient.symptoms || "No symptoms recorded."}
+            {/* 2. Symptoms Row */}
+            <div className="mb-4 flex items-start gap-2">
+                <span className="text-gray-900 font-bold text-sm min-w-fit">=  Symptoms:</span>
+                <p className="text-sm text-gray-500 line-clamp-1">
+                    {patient.symptoms || "No symptoms recorded"}
                 </p>
             </div>
 
-            {/* AI Analysis Block - Only rendered if data exists */}
-            {aiAnalysis && (
-                <div className="bg-indigo-50/50 rounded-xl p-4 mb-4 border border-indigo-100">
-                    <div className="flex gap-3">
-                        <div className="mt-1 shrink-0">
-                            <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center">
-                                <Brain className="w-3.5 h-3.5 text-indigo-600" />
-                            </div>
+            {/* Vitals Grid - Added back with highlighting */}
+            {hasVitals && (
+                <div className="mb-3 grid grid-cols-4 gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <div className="flex flex-col items-center">
+                        <div className="flex items-center gap-1 text-[10px] text-gray-500 uppercase tracking-wide font-medium">
+                            <Heart className="w-3 h-3 text-red-500" /> BP
                         </div>
-                        <p className="text-[11px] leading-relaxed text-indigo-900 font-medium">
-                            {aiAnalysis}
-                        </p>
+                        <div className={cn("text-xs font-bold mt-0.5", (isVitalAbnormal('bloodPressureSys', vitals.bloodPressureSys) || isVitalAbnormal('bloodPressureDia', vitals.bloodPressureDia)) ? "text-red-600 font-extrabold" : "text-gray-900")}>
+                            {vitals.bloodPressureSys}/{vitals.bloodPressureDia}
+                        </div>
                     </div>
-                </div>
-            )}
 
-            {/* Vitals Grid */}
-            <div className="grid grid-cols-4 gap-2 mb-4 bg-green-50/50 p-3 rounded-xl border border-green-100">
-                <VitalItem
-                    label="BP"
-                    value={bpDisplay}
-                    unit=""
-                    icon={<Heart className="w-3.5 h-3.5 text-green-600" />}
-                />
-                <VitalItem
-                    label="BPM"
-                    value={vitals.heartRate || "--"}
-                    unit=""
-                    icon={<Activity className="w-3.5 h-3.5 text-green-600" />}
-                />
-                <VitalItem
-                    label="Temp"
-                    value={tempDisplay}
-                    unit=""
-                    icon={<Thermometer className="w-3.5 h-3.5 text-green-600" />}
-                />
-                <VitalItem
-                    label="O₂ Sat"
-                    value={vitals.o2Saturation ? `${vitals.o2Saturation}%` : "--%"}
-                    unit=""
-                    icon={<Wind className="w-3.5 h-3.5 text-green-600" />}
-                />
-            </div>
-
-            {/* Recommended Actions - Placeholder or AI generated */}
-            {/* If we have recommended actions in patient object, we verify here. 
-                For now we hide if empty or show generic if requested. 
-                User said "not show this when card move" referring to AI analysis text. 
-                I will hide this block if no explicit recommendations exist. 
-            */}
-            {patient.recommendedActions && (
-                <div className="bg-teal-50/50 rounded-xl p-4 mb-4 border border-teal-100">
-                    <div className="flex gap-3">
-                        <div className="mt-1 shrink-0">
-                            <div className="w-6 h-6 rounded-md bg-teal-100 flex items-center justify-center">
-                                <Lightbulb className="w-3.5 h-3.5 text-teal-600" />
-                            </div>
+                    <div className="flex flex-col items-center">
+                        <div className="flex items-center gap-1 text-[10px] text-gray-500 uppercase tracking-wide font-medium">
+                            <Activity className="w-3 h-3 text-emerald-500" /> BPM
                         </div>
-                        <div>
-                            <h4 className="text-xs font-bold text-teal-800 mb-1">Recommended Actions</h4>
-                            <div className="text-[11px] leading-relaxed text-teal-900 space-y-1">
-                                {patient.recommendedActions}
-                            </div>
+                        <div className={cn("text-xs font-bold mt-0.5", isVitalAbnormal('heartRate', vitals.heartRate) ? "text-red-600 font-extrabold" : "text-gray-900")}>
+                            {vitals.heartRate || "--"}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                        <div className="flex items-center gap-1 text-[10px] text-gray-500 uppercase tracking-wide font-medium">
+                            <Thermometer className="w-3 h-3 text-orange-500" /> Temp
+                        </div>
+                        <div className={cn("text-xs font-bold mt-0.5", isVitalAbnormal('temperature', vitals.temperature) ? "text-red-600 font-extrabold" : "text-gray-900")}>
+                            {vitals.temperature ? `${cToF(vitals.temperature)}°` : "--"}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                        <div className="flex items-center gap-1 text-[10px] text-gray-500 uppercase tracking-wide font-medium">
+                            <Wind className="w-3 h-3 text-blue-500" /> O₂
+                        </div>
+                        <div className={cn("text-xs font-bold mt-0.5", isVitalAbnormal('o2Saturation', vitals.o2Saturation) ? "text-red-600 font-extrabold" : "text-gray-900")}>
+                            {vitals.o2Saturation ? `${vitals.o2Saturation}%` : "--"}
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Footer Actions */}
-            <div className="flex gap-2 items-center">
-                <Badge className="bg-orange-500 hover:bg-orange-600 text-white border-none rounded-md px-3 py-1 text-xs font-bold">
-                    {patient.triageLevel || "Pending"}
-                </Badge>
+            {/* 3. Footer Row: Badges (Left) & Actions (Right) */}
+            <div className="flex items-center justify-between mt-2">
 
-                <Badge className="bg-red-50 text-red-600 border-none rounded-md px-3 py-1 text-xs font-medium">
-                    Pain: {patient.painLevel || 0}/10
-                </Badge>
-
-                <Badge className="bg-red-50 text-red-600 border-none rounded-md px-3 py-1 text-xs font-medium flex items-center gap-1">
-                    <Activity className="w-3 h-3" /> {waitTimeDisplay}
-                </Badge>
-
-                {vitals.heartRate && (
-                    <div className="ml-auto">
-                        <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 gap-1 rounded-md px-2">
-                            <Activity className="w-3 h-3" /> Vitals ✓
-                        </Badge>
+                <div className="flex items-center gap-2">
+                    <div className="bg-teal-50 text-teal-700 text-xs px-2.5 py-1 rounded-md font-medium border border-teal-100">
+                        Pain: {patient.painLevel}/10
                     </div>
-                )}
+                    <div className="bg-yellow-50 text-yellow-700 text-xs px-2.5 py-1 rounded-md font-medium border border-yellow-100">
+                        Wait time: {waitTimeDisplay}
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-1 text-gray-400">
+                    {/* PIN BUTTON */}
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onPin?.(patient); }}
+                        className={cn("p-1.5 hover:bg-orange-50 rounded-md transition-colors", patient.isPinned ? "text-orange-500" : "hover:text-orange-500")}
+                        title={patient.isPinned ? "Unpin Patient" : "Pin to top"}
+                    >
+                        <Pin className={cn("w-4 h-4", patient.isPinned && "fill-current")} />
+                    </button>
+
+                    <button onClick={(e) => { e.stopPropagation(); onHistory?.(patient); }} className="p-1.5 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
+                        <History className="w-4 h-4" />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); onVitals?.(patient); }} className="p-1.5 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
+                        <Activity className="w-4 h-4" />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); onEdit?.(patient); }} className="p-1.5 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
+                        <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); onDelete?.(patient); }} className="p-1.5 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                </div>
 
             </div>
-
         </Card>
     );
 };
-
-const VitalItem = ({ label, value, unit, icon }) => (
-    <div className="flex flex-col items-center text-center p-1">
-        <div className="mb-1">{icon}</div>
-        <div className="text-xs font-bold text-gray-900 leading-tight">
-            {value} <span className="text-[9px] text-gray-500">{unit}</span>
-        </div>
-        <div className="text-[9px] text-gray-400 font-medium tracking-wide uppercase">{label}</div>
-    </div>
-);

@@ -16,6 +16,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
+  arrayMove,
 } from "@dnd-kit/sortable";
 
 import { Loader2, Clock, Stethoscope, Activity, FileText, AlertTriangle, UserPlus } from "lucide-react";
@@ -82,9 +83,14 @@ export default function NurseDashboard() {
   const unscheduledItems = items.filter(p => p.status === PATIENT_STATUS.WAITING);
   const scheduledItems = items.filter(p => p.status === PATIENT_STATUS.TRIAGED);
 
-  const filteredUnscheduled = unscheduledItems.filter(p =>
+  const filteredUnscheduledRaw = unscheduledItems.filter(p =>
     p.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const pinnedUnscheduled = filteredUnscheduledRaw.filter(p => p.isPinned);
+  const unpinnedUnscheduled = filteredUnscheduledRaw.filter(p => !p.isPinned).sort((a, b) => (a.manualOrder || 0) - (b.manualOrder || 0));
+
+  const sortedUnscheduled = [...pinnedUnscheduled, ...unpinnedUnscheduled];
   const filteredScheduled = scheduledItems.filter(p =>
     p.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -92,7 +98,14 @@ export default function NurseDashboard() {
   const activePatient = items.find(p => p._id === activeId);
 
   // Sorting: Critical (1) first, then by triage level
-  const sortedScheduled = [...filteredScheduled].sort((a, b) => (a.priority || 5) - (b.priority || 5));
+  // Sorting: Pinned items first, then by manual order (or priority if no order yet)
+  const pinnedScheduled = filteredScheduled.filter(p => p.isPinned);
+  const unpinnedScheduled = filteredScheduled.filter(p => !p.isPinned).sort((a, b) => {
+    // Default to 0 if undefined. Sort ascending.
+    return (a.manualOrder || 0) - (b.manualOrder || 0);
+  });
+
+  const sortedScheduled = [...pinnedScheduled, ...unpinnedScheduled];
 
 
   // --- Handlers ---
@@ -104,6 +117,38 @@ export default function NurseDashboard() {
     setActiveId(null);
 
     if (!over) return;
+
+    // 1. Reordering within the same list logic?
+    if (active.id !== over.id) {
+      const activeItem = items.find(p => p._id === active.id);
+      const overItem = items.find(p => p._id === over.id);
+
+      // Handle Reordering within "Scheduled/Unpinned" list
+      const isUnscheduled = activeItem.status === PATIENT_STATUS.WAITING;
+      const targetList = isUnscheduled ? unpinnedUnscheduled : unpinnedScheduled;
+
+      if (activeItem && overItem &&
+        activeItem.status === overItem.status &&
+        (!activeItem.isPinned && !overItem.isPinned)
+      ) {
+        const oldIndex = targetList.findIndex(p => p._id === active.id);
+        const newIndex = targetList.findIndex(p => p._id === over.id);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const newOrderArray = arrayMove(targetList, oldIndex, newIndex);
+          const updates = newOrderArray.map((p, index) => ({ _id: p._id, manualOrder: index }));
+
+          setItems(prev => prev.map(p => {
+            const update = updates.find(u => u._id === p._id);
+            return update ? { ...p, manualOrder: update.manualOrder } : p;
+          }));
+
+          updates.forEach(u => updatePatient(u._id, { manualOrder: u.manualOrder }));
+          return;
+        }
+      }
+    }
+
 
     const patientId = active.id;
     const isOverScheduled = over.id === 'scheduled-container' ||
@@ -139,14 +184,23 @@ export default function NurseDashboard() {
       }
 
       newStatus = PATIENT_STATUS.TRIAGED;
-      updates = { status: newStatus };
+      // Assign to end of list
+      const maxOrder = unpinnedScheduled.length > 0
+        ? Math.max(...unpinnedScheduled.map(p => p.manualOrder || 0))
+        : -1;
+
+      updates = { status: newStatus, manualOrder: maxOrder + 1 };
       // OPEN AI ONLY
       shouldTriggerAI = true;
     }
     // Logic: Move Right -> Left (Scheduled -> Unscheduled)
     else if (draggedItem.status !== PATIENT_STATUS.WAITING && isOverUnscheduled) {
       newStatus = PATIENT_STATUS.WAITING;
-      updates = { status: newStatus };
+      // Assign to end of Unscheduled list
+      const maxOrder = sortedUnscheduled.length > 0
+        ? Math.max(...sortedUnscheduled.map(p => p.manualOrder || 0))
+        : -1;
+      updates = { status: newStatus, manualOrder: maxOrder + 1 };
     }
 
     if (newStatus && newStatus !== draggedItem.status) {
@@ -210,6 +264,19 @@ export default function NurseDashboard() {
       handleDataUpdate(updatedPatientData);
     }
     refreshPatients();
+  };
+
+  const handlePin = async (patient) => {
+    const newPinned = !patient.isPinned;
+    // Optimistic update
+    setItems(prev => prev.map(p => p._id === patient._id ? { ...p, isPinned: newPinned } : p));
+
+    const success = await updatePatient(patient._id, { isPinned: newPinned });
+    if (!success) {
+      // Revert if failed
+      setItems(prev => prev.map(p => p._id === patient._id ? { ...p, isPinned: !newPinned } : p));
+      toast.error("Failed to update pin status");
+    }
   };
 
   return (
@@ -296,7 +363,7 @@ export default function NurseDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
             {/* --- Left Column: Unscheduled (4 cols) --- */}
-            <div className="lg:col-span-4 flex flex-col gap-6">
+            <div className="lg:col-span-6 flex flex-col gap-6">
 
               {/* Custom Header for Unscheduled */}
               <div className="bg-yellow-50 rounded-2xl p-4 border border-yellow-100 flex items-center justify-between">
@@ -310,15 +377,15 @@ export default function NurseDashboard() {
                   </div>
                 </div>
                 <div className="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg font-bold text-sm">
-                  {filteredUnscheduled.length}
+                  {sortedUnscheduled.length}
                 </div>
               </div>
 
               <DroppableContainer id="unscheduled-container" className="space-y-4 min-h-[500px]">
-                <SortableContext items={filteredUnscheduled.map(p => p._id)} strategy={verticalListSortingStrategy}>
+                <SortableContext items={sortedUnscheduled.map(p => p._id)} strategy={verticalListSortingStrategy}>
                   {isLoading ? (
                     <div className="flex justify-center pt-10"><Loader2 className="animate-spin text-teal-600" /></div>
-                  ) : filteredUnscheduled.map(patient => (
+                  ) : sortedUnscheduled.map(patient => (
                     <SortablePatientCard
                       key={patient._id}
                       patient={patient}
@@ -326,9 +393,10 @@ export default function NurseDashboard() {
                       onDelete={handleDeleteClick}
                       onHistory={handleHistoryClick}
                       onVitals={handleVitalsClick}
+                      onPin={handlePin}
                     />
                   ))}
-                  {!isLoading && filteredUnscheduled.length === 0 && (
+                  {!isLoading && sortedUnscheduled.length === 0 && (
                     <div className="text-center py-10 text-gray-400 border-2 border-dashed rounded-2xl bg-white">
                       No unscheduled patients
                     </div>
@@ -339,7 +407,7 @@ export default function NurseDashboard() {
 
 
             {/* --- Right Column: Scheduled / Triaged (8 cols) --- */}
-            <div className="lg:col-span-8 flex flex-col gap-6">
+            <div className="lg:col-span-6 flex flex-col gap-6">
 
               {/* Custom Header for Scheduled */}
               <div className="bg-white rounded-2xl p-4 border border-gray-200 flex items-center justify-between shadow-sm">
@@ -377,6 +445,7 @@ export default function NurseDashboard() {
                       onDelete={handleDeleteClick}
                       onClick={() => openModal('TREATMENT', patient)}
                       onVitals={handleVitalsClick}
+                      onPin={handlePin}
                     />
                   ))}
 

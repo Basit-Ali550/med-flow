@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cn, calculateAge, formatWaitTime, cToF } from "@/lib/utils";
+import { cn, calculateAge, formatWaitTime, cToF, isVitalAbnormal } from "@/lib/utils";
 import {
   GripHorizontal,
   Pencil,
@@ -15,6 +15,7 @@ import {
   Eye,
   Thermometer,
   Wind,
+  Pin,
 } from "lucide-react";
 
 export const PatientCard = ({
@@ -23,6 +24,7 @@ export const PatientCard = ({
   onDelete,
   onHistory,
   onVitals,
+  onPin, // Add onPin
   onClick,
   dragHandleProps,
   isOverlay,
@@ -89,6 +91,10 @@ export const PatientCard = ({
             <Eye className="w-3.5 h-3.5" />
           </button>
 
+          <button onClick={(e) => { e.stopPropagation(); onPin?.(patient); }} className={cn("p-1.5 rounded-lg border border-gray-200 hover:bg-orange-50 transition-colors", patient.isPinned ? "text-orange-500 bg-orange-50 border-orange-200" : "text-gray-400 hover:text-orange-500")}>
+            <Pin className={cn("w-3.5 h-3.5", patient.isPinned && "fill-current")} />
+          </button>
+
           <button onClick={(e) => { e.stopPropagation(); onEdit?.(patient); }} className="p-1.5 rounded-lg border border-gray-200 text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors">
             <Pencil className="w-3.5 h-3.5" />
           </button>
@@ -112,7 +118,7 @@ export const PatientCard = ({
               <div className="flex items-center gap-1 text-[10px] text-gray-500 uppercase tracking-wide font-medium">
                 <Heart className="w-3 h-3 text-red-500" /> BP
               </div>
-              <div className="text-xs font-bold text-gray-900 mt-0.5">
+              <div className={cn("text-xs font-bold mt-0.5", (isVitalAbnormal('bloodPressureSys', patient.vitalSigns.bloodPressureSys) || isVitalAbnormal('bloodPressureDia', patient.vitalSigns.bloodPressureDia)) ? "text-red-600 font-extrabold" : "text-gray-900")}>
                 {patient.vitalSigns.bloodPressureSys}/{patient.vitalSigns.bloodPressureDia}
               </div>
             </div>
@@ -121,7 +127,7 @@ export const PatientCard = ({
               <div className="flex items-center gap-1 text-[10px] text-gray-500 uppercase tracking-wide font-medium">
                 <Activity className="w-3 h-3 text-emerald-500" /> BPM
               </div>
-              <div className="text-xs font-bold text-gray-900 mt-0.5">
+              <div className={cn("text-xs font-bold mt-0.5", isVitalAbnormal('heartRate', patient.vitalSigns.heartRate) ? "text-red-600 font-extrabold" : "text-gray-900")}>
                 {patient.vitalSigns.heartRate || "--"}
               </div>
             </div>
@@ -130,7 +136,7 @@ export const PatientCard = ({
               <div className="flex items-center gap-1 text-[10px] text-gray-500 uppercase tracking-wide font-medium">
                 <Thermometer className="w-3 h-3 text-orange-500" /> Temp
               </div>
-              <div className="text-xs font-bold text-gray-900 mt-0.5">
+              <div className={cn("text-xs font-bold mt-0.5", isVitalAbnormal('temperature', patient.vitalSigns.temperature) ? "text-red-600 font-extrabold" : "text-gray-900")}>
                 {patient.vitalSigns.temperature ? `${cToF(patient.vitalSigns.temperature)}°` : "--"}
               </div>
             </div>
@@ -139,7 +145,7 @@ export const PatientCard = ({
               <div className="flex items-center gap-1 text-[10px] text-gray-500 uppercase tracking-wide font-medium">
                 <Wind className="w-3 h-3 text-blue-500" /> O₂
               </div>
-              <div className="text-xs font-bold text-gray-900 mt-0.5">
+              <div className={cn("text-xs font-bold mt-0.5", isVitalAbnormal('o2Saturation', patient.vitalSigns.o2Saturation) ? "text-red-600 font-extrabold" : "text-gray-900")}>
                 {patient.vitalSigns.o2Saturation ? `${patient.vitalSigns.o2Saturation}%` : "--"}
               </div>
             </div>

@@ -13,6 +13,7 @@ export function SortablePatientCard({
   onHistory,
   onVitals,
   onClick,
+  onPin, // Add onPin
   useTriagedCard = false,
 }) {
   const {
@@ -41,6 +42,7 @@ export function SortablePatientCard({
         onDelete={(p) => onDelete?.(p)}
         onHistory={(p) => onHistory?.(p)}
         onVitals={(p) => onVitals?.(p)}
+        onPin={(p) => onPin?.(p)} // Pass onPin
         onClick={(p) => onClick?.(p)}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
