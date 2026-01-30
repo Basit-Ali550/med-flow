@@ -20,7 +20,7 @@ const baseSchema = {
       "Date of birth must be at least 1 day before today",
     )
     .required("Date of birth is required"),
-  gender: Yup.string(),
+  gender: Yup.string().required("Gender is required"),
   symptoms: Yup.string()
     .min(10, "Please describe symptoms in detail")
     .required("Symptoms are required"),
@@ -118,7 +118,7 @@ export default function PatientForm({
               />
             </div>
             <div>
-              <Label htmlFor="gender">Gender</Label>
+              <Label htmlFor="gender">Gender *</Label>
               <Field
                 as="select"
                 id="gender"
@@ -130,6 +130,11 @@ export default function PatientForm({
                 <option value="Female">Female</option>
                 <option value="Other">Other</option>
               </Field>
+              <ErrorMessage
+                name="gender"
+                component="p"
+                className="text-red-500 text-sm mt-1"
+              />
             </div>
           </div>
 
