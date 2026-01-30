@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn, calculateAge, formatWaitTime } from "@/lib/utils";
+import { PATIENT_STATUS } from "@/lib/constants";
 import {
   Select,
   SelectContent,
@@ -133,12 +134,12 @@ export const PatientCard = ({
 
           {/* Priority & AI Analysis Section */}
           <div className="flex justify-between items-start mb-3 min-h-[28px]">
-            {/* Triage Level - Editable Dropdown (Always Visible) */}
+            {/* Triage Level - Editable Dropdown (Only Visible for Scheduled/Triaged) */}
             <div
               onClick={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
             >
-              {onTriageChange ? (
+              {onTriageChange && patient.status !== PATIENT_STATUS.WAITING ? (
                 <Select
                   defaultValue={patient.triageLevel || "Semi-Urgent"}
                   onValueChange={(val) => onTriageChange(patient, val)}
@@ -171,7 +172,9 @@ export const PatientCard = ({
                   </SelectContent>
                 </Select>
               ) : (
-                patient.triageLevel && (
+                /* Only show badge if NOT Waiting */
+                patient.triageLevel &&
+                patient.status !== PATIENT_STATUS.WAITING && (
                   <Badge variant="outline">{patient.triageLevel}</Badge>
                 )
               )}
@@ -237,12 +240,11 @@ export const PatientCard = ({
                 <ActionButton
                   onClick={(e) => {
                     e.stopPropagation();
-                    // We can reuse a prop for this, or generic onClick
-                    // Let's assume onAIAnalysis prop or handle via onClick logic
+
                     if (onAIAnalysis) {
                       onAIAnalysis(patient);
                     } else if (onClick) {
-                      onClick(patient); // Fallback to card click behavior which opens treatment/AI
+                      onClick(patient);
                     }
                   }}
                   icon={<BrainCircuit className="w-4 h-4" />}

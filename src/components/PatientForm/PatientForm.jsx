@@ -35,7 +35,7 @@ const vitalSignsSchema = {
   heartRate: Yup.number().min(0).max(300),
   bloodPressureSys: Yup.number().min(0).max(300),
   bloodPressureDia: Yup.number().min(0).max(200),
-  temperature: Yup.number().min(30).max(45),
+  temperature: Yup.number().min(90).max(115), // Fahrenheit Check
   o2Saturation: Yup.number().min(0).max(100),
 };
 
@@ -68,11 +68,33 @@ export default function PatientForm({
     ...(showVitalSigns ? vitalSignsSchema : {}),
   });
 
+  // Convert Initial Values (C -> F for display)
+  const formInitialValues = {
+    ...initialValues,
+    temperature: initialValues.temperature
+      ? ((initialValues.temperature * 9) / 5 + 32).toFixed(1)
+      : initialValues.temperature,
+  };
+
+  // Handle Submit (F -> C for API)
+  const handleFormSubmit = (values, actions) => {
+    const submissionValues = { ...values };
+
+    if (submissionValues.temperature) {
+      const tempF = parseFloat(submissionValues.temperature);
+      const tempC = ((tempF - 32) * 5) / 9;
+      submissionValues.temperature = parseFloat(tempC.toFixed(1));
+    }
+
+    onSubmit(submissionValues, actions);
+  };
+
   return (
     <Formik
-      initialValues={initialValues}
+      initialValues={formInitialValues}
       validationSchema={validationSchema}
-      onSubmit={onSubmit}
+      onSubmit={handleFormSubmit}
+      enableReinitialize // Important for Edit Mode async data
     >
       {({ values, isSubmitting, setFieldValue }) => (
         <Form>
@@ -278,13 +300,14 @@ export default function PatientForm({
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="temperature">Temperature (°C)</Label>
+                  <Label htmlFor="temperature">Temperature (°F)</Label>
                   <Field
                     as={Input}
                     id="temperature"
                     name="temperature"
                     type="number"
                     step="0.1"
+                    placeholder="98.6"
                     className="mt-2 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>

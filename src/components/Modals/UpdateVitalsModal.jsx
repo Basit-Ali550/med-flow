@@ -42,11 +42,15 @@ export function UpdateVitalsModal({
 
   useEffect(() => {
     if (patient?.vitalSigns) {
+      // Convert Celsius to Fahrenheit for display if present
+      const tempC = patient.vitalSigns.temperature;
+      const tempF = tempC ? ((tempC * 9) / 5 + 32).toFixed(1) : "";
+
       setVitals({
         heartRate: patient.vitalSigns.heartRate || "",
         bloodPressureSys: patient.vitalSigns.bloodPressureSys || "",
         bloodPressureDia: patient.vitalSigns.bloodPressureDia || "",
-        temperature: patient.vitalSigns.temperature || "",
+        temperature: tempF,
         o2Saturation: patient.vitalSigns.o2Saturation || "",
       });
     } else {
@@ -74,7 +78,14 @@ export function UpdateVitalsModal({
       // Sanitize payload: Remove empty strings to avoid CastError/NaN on backend
       const payload = Object.entries(vitals).reduce((acc, [key, value]) => {
         if (value !== "" && value !== null && value !== undefined) {
-          acc[key] = value;
+          // Convert Fahrenheit back to Celsius for API
+          if (key === "temperature") {
+            const tempF = parseFloat(value);
+            const tempC = ((tempF - 32) * 5) / 9;
+            acc[key] = parseFloat(tempC.toFixed(1));
+          } else {
+            acc[key] = value;
+          }
         }
         return acc;
       }, {});
@@ -110,9 +121,10 @@ export function UpdateVitalsModal({
         return "border-emerald-500 focus:border-emerald-600 bg-emerald-50";
 
       case "temperature":
-        if (num < 35.0 || num > 39.5)
+        // Fahrenheit Ranges
+        if (num < 95.0 || num > 103.1)
           return "border-red-500 focus:border-red-600 bg-red-50";
-        if (num < 36.0 || num > 37.5)
+        if (num < 96.8 || num > 99.5)
           return "border-amber-500 focus:border-amber-600 bg-amber-50";
         return "border-emerald-500 focus:border-emerald-600 bg-emerald-50";
 
@@ -153,9 +165,10 @@ export function UpdateVitalsModal({
         if (num < 60) return "Bradycardia";
         break;
       case "temperature":
-        if (num > 39) return "High Fever";
-        if (num > 37.5) return "Fever";
-        if (num < 35) return "Hypothermia";
+        // Fahrenheit Messages
+        if (num > 102.2) return "High Fever";
+        if (num > 99.5) return "Fever";
+        if (num < 95) return "Hypothermia";
         break;
       case "o2Saturation":
         if (num < 90) return "Critical Hypoxia";
@@ -231,13 +244,13 @@ export function UpdateVitalsModal({
                     name="temperature"
                     type="number"
                     step="0.1"
-                    placeholder="00.0"
+                    placeholder="98.6"
                     value={vitals.temperature}
                     onChange={handleChange}
                     className={`h-11 transition-all duration-300 border-2 ${getVitalColor("temperature", vitals.temperature)}`}
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">
-                    °C
+                    °F
                   </span>
                 </div>
               </div>

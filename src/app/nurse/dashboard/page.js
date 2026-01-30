@@ -536,7 +536,7 @@ export default function NurseDashboard() {
                                 toast.success("Priority level updated");
                             } catch (error) {
                                 toast.error("Failed to update priority");
-                                // Rollback logic could be added here
+                               
                             }
                         }}
                         onAIAnalysis={(patient) => {
@@ -547,9 +547,7 @@ export default function NurseDashboard() {
                     ))}
                     
                     {/* Persistent Drop Zone Placeholder */}
-                    <div className="mt-4 w-full min-h-[100px] p-6 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-400 text-sm font-medium bg-gray-50/50 transition-colors hover:border-teal-200 hover:bg-teal-50/30">
-                       Drag patients here for Triage
-                    </div>
+                  
                  </SortableContext>
               </DroppableContainer>
             </div>
