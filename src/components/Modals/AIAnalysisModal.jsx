@@ -19,6 +19,26 @@ import { toast } from "sonner";
 import { cToF } from "@/lib/utils";
 
 export function AIAnalysisModal({ isOpen, onClose, patient, onAnalysisComplete }) {
+  if (!isOpen) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        showCloseButton={false}
+        className="sm:max-w-[500px] p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-xl"
+      >
+        <AIAnalysisContent
+          patient={patient}
+          onClose={onClose}
+          onAnalysisComplete={onAnalysisComplete}
+          isModal={true}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function AIAnalysisContent({ patient, onClose, onAnalysisComplete, isModal = false }) {
   const [loading, setLoading] = useState(true);
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState(null);
@@ -76,9 +96,11 @@ export function AIAnalysisModal({ isOpen, onClose, patient, onAnalysisComplete }
           onAnalysisComplete({ ...patient, ...updates });
         }
 
-        setTimeout(() => {
-          onClose();
-        }, 2500);
+        if (isModal) {
+          setTimeout(() => {
+            onClose?.();
+          }, 2500);
+        }
       }
     } catch (err) {
       console.error("Save Error", err);
@@ -90,62 +112,55 @@ export function AIAnalysisModal({ isOpen, onClose, patient, onAnalysisComplete }
   };
 
   useEffect(() => {
-    if (isOpen && patient) {
+    if (patient) {
+      // If we already have analysis data in patient object, maybe use that? 
+      // But the modal implies re-running it. 
+      // For 'Details' view, we might want to just SHOW current analysis if exists, or run if not.
+      // For now, keep existing behavior: Run on mount.
       generateAnalysis();
-    } else {
-      setLoading(true);
-      setAnalysis(null);
-      setError(null);
     }
-  }, [isOpen, patient, generateAnalysis]);
-
-  if (!isOpen) return null;
+  }, [patient, generateAnalysis]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent
-        showCloseButton={false}
-        className="sm:max-w-[500px] p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-xl"
-      >
-        <div className="p-8 flex flex-col items-center text-center">
-          {loading || isSaving ? (
-            <>
-              <div className="relative mb-6">
-                <div className="w-20 h-20 border-[6px] border-teal-50 border-t-teal-600 rounded-full animate-spin"></div>
-                <BrainCircuit className="w-8 h-8 text-teal-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
-                {isSaving ? "Saving Analysis..." : "AI Analyzing..."}
-              </h2>
-              <p className="text-gray-500 text-sm">
-                Please wait while our AI reviews patient history and vitals.
-              </p>
-            </>
-          ) : error ? (
-            <>
-              <div className="bg-red-100 p-4 rounded-full mb-4">
-                <X className="w-8 h-8 text-red-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Analysis Failed</h3>
-              <p className="text-gray-500 text-sm mb-6">{error}</p>
-              <Button onClick={onClose} variant="outline">Close</Button>
-            </>
-          ) : (
-            <>
-              <div className="bg-green-100 p-4 rounded-full mb-4 animate-in zoom-in">
-                <CheckCircle2 className="w-8 h-8 text-green-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Analysis Complete</h3>
-              <p className="text-gray-500 text-sm mb-4">
-                Triage Level: <span className="font-bold text-teal-700">{analysis.triageLevel}</span>
-              </p>
-              <p className="text-xs text-gray-400">
-                Closing window...
-              </p>
-            </>
+    <div className="p-8 flex flex-col items-center text-center">
+      {loading || isSaving ? (
+        <>
+          <div className="relative mb-6">
+            <div className="w-20 h-20 border-[6px] border-teal-50 border-t-teal-600 rounded-full animate-spin"></div>
+            <BrainCircuit className="w-8 h-8 text-teal-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            {isSaving ? "Saving Analysis..." : "AI Analyzing..."}
+          </h2>
+          <p className="text-gray-500 text-sm">
+            Please wait while our AI reviews patient history and vitals.
+          </p>
+        </>
+      ) : error ? (
+        <>
+          <div className="bg-red-100 p-4 rounded-full mb-4">
+            <X className="w-8 h-8 text-red-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Analysis Failed</h3>
+          <p className="text-gray-500 text-sm mb-6">{error}</p>
+          <Button onClick={onClose} variant="outline">Close</Button>
+        </>
+      ) : (
+        <>
+          <div className="bg-green-100 p-4 rounded-full mb-4 animate-in zoom-in">
+            <CheckCircle2 className="w-8 h-8 text-green-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Analysis Complete</h3>
+          <p className="text-gray-500 text-sm mb-4">
+            Triage Level: <span className="font-bold text-teal-700">{analysis.triageLevel}</span>
+          </p>
+          {isModal && (
+            <p className="text-xs text-gray-400">
+              Closing window...
+            </p>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </>
+      )}
+    </div>
   );
 }

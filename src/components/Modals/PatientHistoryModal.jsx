@@ -108,7 +108,7 @@ export function PatientHistoryModal({ isOpen, onClose, patient }) {
   );
 }
 
-const HistorySection = ({
+export const HistorySection = ({
   icon,
   title,
   subtitle,

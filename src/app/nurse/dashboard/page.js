@@ -27,7 +27,8 @@ import { AIAnalysisModal } from "@/components/Modals/AIAnalysisModal";
 import { TreatmentConfirmationModal } from "@/components/Modals/TreatmentConfirmationModal";
 import { UpdateVitalsModal } from "@/components/Modals/UpdateVitalsModal";
 import { PatientHistoryModal } from "@/components/Modals/PatientHistoryModal";
-import { EditPatientModal } from "@/components/Modals/EditPatientModal"; // New Import
+import { EditPatientModal } from "@/components/Modals/EditPatientModal";
+import { PatientDetailsModal } from "@/components/Modals/PatientDetailsModal"; // New Import
 import { PatientCard } from "@/components/Dashboard/PatientCard";
 import { SortablePatientCard } from "@/components/Dashboard/SortablePatientCard";
 import { DroppableContainer } from "@/components/Dashboard/DroppableContainer";
@@ -62,11 +63,12 @@ export default function NurseDashboard() {
   // --- Modal State ---
   const [activeModal, setActiveModal] = useState({
     type: null,
-    patient: null
+    patient: null,
+    options: {}
   });
 
-  const openModal = (type, patient) => setActiveModal({ type, patient });
-  const closeModal = () => setActiveModal({ type: null, patient: null });
+  const openModal = (type, patient, options = {}) => setActiveModal({ type, patient, options });
+  const closeModal = () => setActiveModal({ type: null, patient: null, options: {} });
 
   // Update items when AI Analysis or Vitals updates complete
   const handleDataUpdate = (updatedPatient) => {
@@ -256,7 +258,7 @@ export default function NurseDashboard() {
     }
   };
 
-  const handleHistoryClick = (patient) => openModal('HISTORY', patient);
+  const handleHistoryClick = (patient) => openModal('DETAILS', patient, { initialTab: 'history' });
   const handleVitalsClick = (patient) => openModal('VITALS', patient);
 
   const handleAIComplete = (updatedPatientData) => {
@@ -321,6 +323,14 @@ export default function NurseDashboard() {
         isOpen={activeModal.type === 'HISTORY'}
         onClose={closeModal}
         patient={activeModal.patient}
+      />
+
+      <PatientDetailsModal
+        isOpen={activeModal.type === 'DETAILS'}
+        onClose={closeModal}
+        patient={activeModal.patient}
+        onStartTreatment={(patient) => openModal('TREATMENT', patient)}
+        initialTab={activeModal.options?.initialTab || 'overview'}
       />
 
       <main className="max-w-[1600px] mx-auto p-6">
@@ -446,6 +456,7 @@ export default function NurseDashboard() {
                       onClick={() => openModal('TREATMENT', patient)}
                       onVitals={handleVitalsClick}
                       onPin={handlePin}
+                      onHistory={handleHistoryClick}
                     />
                   ))}
 
