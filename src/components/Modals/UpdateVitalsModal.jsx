@@ -71,7 +71,21 @@ export function UpdateVitalsModal({
 
     setIsSubmitting(true);
     try {
-      const data = await patientsApi.update(patient._id, vitals);
+      // Sanitize payload: Remove empty strings to avoid CastError/NaN on backend
+      const payload = Object.entries(vitals).reduce((acc, [key, value]) => {
+        if (value !== "" && value !== null && value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {});
+
+      if (Object.keys(payload).length === 0) {
+        toast.warning("Please enter at least one vital sign");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const data = await patientsApi.update(patient._id, payload);
       toast.success("Vital signs updated successfully");
       onUpdateSuccess?.(data.data.patient);
       onClose();

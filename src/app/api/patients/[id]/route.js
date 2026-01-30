@@ -69,9 +69,11 @@ export async function PUT(request, { params }) {
         body.bloodPressureDia !== undefined || body.temperature !== undefined || 
         body.o2Saturation !== undefined) {
       
-      updateData.vitalSigns = {
-        ...(existingPatient.vitalSigns || {}),
-      };
+      const currentVitals = existingPatient.vitalSigns && existingPatient.vitalSigns.toObject 
+          ? existingPatient.vitalSigns.toObject() 
+          : (existingPatient.vitalSigns || {});
+          
+      updateData.vitalSigns = { ...currentVitals };
       
       if (body.heartRate !== undefined) updateData.vitalSigns.heartRate = parseFloat(body.heartRate);
       if (body.bloodPressureSys !== undefined) updateData.vitalSigns.bloodPressureSys = parseFloat(body.bloodPressureSys);

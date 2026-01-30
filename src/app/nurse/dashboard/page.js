@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -61,11 +61,12 @@ export default function NurseDashboard() {
   // --- Modal State Refactor ---
   const [activeModal, setActiveModal] = useState({ 
     type: null, // 'DELETE' | 'AI' | 'TREATMENT' | 'HISTORY' | 'VITALS'
-    patient: null 
+    patient: null,
+    meta: null 
   });
 
-  const openModal = (type, patient) => setActiveModal({ type, patient });
-  const closeModal = () => setActiveModal({ type: null, patient: null });
+  const openModal = (type, patient, meta = null) => setActiveModal({ type, patient, meta });
+  const closeModal = () => setActiveModal({ type: null, patient: null, meta: null });
 
   // --- DnD Sensors ---
   const sensors = useSensors(
@@ -86,7 +87,20 @@ export default function NurseDashboard() {
   );
 
   // --- Sorting Logic ---
-  // Priority: Pinned > High Urgency Score > Oldest Wait Time
+  
+  // 1. Unscheduled List (Manual Order + Fallback to Newest)
+  const sortedUnscheduledItems = [...filteredUnscheduled].sort((a, b) => {
+      // Manual Order (Ascending)
+      const orderA = a.manualOrder ?? 0;
+      const orderB = b.manualOrder ?? 0;
+      if (Math.abs(orderA - orderB) > 0.00001) {
+          return orderA - orderB;
+      }
+      // Fallback: Registration Time (Desc/LIFO as per API default)
+      return new Date(b.registeredAt) - new Date(a.registeredAt); 
+  });
+
+  // 2. Scheduled List (Pinned > Manual > Score > Wait Time)
   const sortedScheduledItems = [...filteredScheduled].sort((a, b) => {
     // 1. Pinned items first
     if (a.isPinned && !b.isPinned) return -1;
@@ -188,6 +202,46 @@ export default function NurseDashboard() {
        }
        return;
     }
+    // Logic 4: Reorder within Unscheduled List
+    else if (draggedItem.status === PATIENT_STATUS.WAITING && isOverUnscheduled && active.id !== over.id) {
+       const oldIndex = sortedUnscheduledItems.findIndex(p => p._id === active.id);
+       const newIndex = sortedUnscheduledItems.findIndex(p => p._id === over.id);
+
+       if (oldIndex !== -1 && newIndex !== -1) {
+           const reorderedList = arrayMove(sortedUnscheduledItems, oldIndex, newIndex);
+           const movedItemIndex = reorderedList.findIndex(p => p._id === active.id);
+           
+           const prevItem = reorderedList[movedItemIndex - 1];
+           const nextItem = reorderedList[movedItemIndex + 1];
+
+           const lowerBound = prevItem ? (prevItem.manualOrder ?? 0) : null;
+           const upperBound = nextItem ? (nextItem.manualOrder ?? 0) : null;
+
+           let newOrder;
+           if (lowerBound !== null && upperBound !== null) {
+               newOrder = (lowerBound + upperBound) / 2;
+           } else if (lowerBound !== null) {
+               newOrder = lowerBound + 10000;
+           } else if (upperBound !== null) {
+               newOrder = upperBound - 10000;
+           } else {
+               newOrder = 0;
+           }
+
+           // Optimistic Update
+           setItems(prev => prev.map(p => 
+               p._id === patientId ? { ...p, manualOrder: newOrder } : p
+           ));
+
+           try {
+              await updatePatient(patientId, { manualOrder: newOrder });
+           } catch (err) {
+              setItems(previousItems);
+              toast.error("Failed to reorder");
+           }
+       }
+       return;
+    }
 
     // Apply Status Changes (Logic 1 & 2)
     if (newStatus && newStatus !== draggedItem.status) {
@@ -201,13 +255,28 @@ export default function NurseDashboard() {
       // Trigger AI Modal
       if (shouldTriggerAI) {
         const waitTime = getWaitTimeMinutes(draggedItem.registeredAt);
+
+        // Check Vitals First
+        const hasVitals = draggedItem.vitalSigns && (
+            draggedItem.vitalSigns.heartRate || 
+            draggedItem.vitalSigns.bloodPressureSys || 
+            draggedItem.vitalSigns.temperature || 
+            draggedItem.vitalSigns.o2Saturation
+        );
+        
         const updatedItemForModal = { 
             ...draggedItem, 
             status: newStatus, 
             waitTime 
         };
-        const hasAnalysis = draggedItem.aiAnalysis && draggedItem.aiAnalysis.score != null;
-        openModal(hasAnalysis ? 'AI_VIEW' : 'AI', updatedItemForModal);
+
+        if (!hasVitals) {
+             // Open Vitals Modal first, then chain AI
+             openModal('VITALS', updatedItemForModal, { next: 'AI' });
+        } else {
+             const hasAnalysis = draggedItem.aiAnalysis && draggedItem.aiAnalysis.score != null;
+             openModal(hasAnalysis ? 'AI_VIEW' : 'AI', updatedItemForModal);
+        }
       }
 
       // API Call
@@ -271,11 +340,22 @@ export default function NurseDashboard() {
   const handleHistoryClick = (patient) => openModal('HISTORY', patient);
   const handleVitalsClick = (patient) => openModal('VITALS', patient);
   
-  const handleVitalsUpdate = (updatedPatient) => {
+  const handleVitalsUpdate = useCallback((updatedPatient) => {
     setItems(prev => prev.map(p => p._id === updatedPatient._id ? updatedPatient : p));
-  };
+    
+    // Check for chained action (e.g. AI Analysis after Vitals)
+    // IMPORTANT: Consume the 'next' instruction immediately to prevent loops
+    if (activeModal.meta?.next === 'AI') {
+        // Clear the interaction meta so subsequent updates don't re-trigger this
+        setActiveModal(prev => ({ ...prev, meta: null }));
 
-  const handleAnalysisComplete = async (updatedPatient) => {
+        setTimeout(() => {
+             openModal('AI', updatedPatient);
+        }, 300); // 300ms for smooth modal transition
+    }
+  }, [activeModal.meta, setItems]); // Dependency on meta is key
+
+  const handleAnalysisComplete = useCallback(async (updatedPatient) => {
      // 1. Update Local State immediately
      setItems(prev => prev.map(p => p._id === updatedPatient._id ? updatedPatient : p));
      
@@ -290,7 +370,7 @@ export default function NurseDashboard() {
        console.error("Failed to save analysis", err);
        toast.error("Failed to save analysis");
      }
-  };
+  }, [updatePatient, setItems]);
 
   const handlePin = async (patient) => {
       const newPinnedState = !patient.isPinned;
@@ -369,7 +449,7 @@ export default function NurseDashboard() {
           onDragStart={handleDragStart} 
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 sm:gap-24 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 sm:gap-12 gap-8">
             
         
             <div className="flex flex-col gap-8">
@@ -381,10 +461,10 @@ export default function NurseDashboard() {
 
               {/* Droppable Area */}
               <DroppableContainer id="unscheduled-container" className="space-y-3 min-h-[300px] rounded-xl transition-all">
-                <SortableContext items={filteredUnscheduled.map(p => p._id)} strategy={verticalListSortingStrategy}>
+                <SortableContext items={sortedUnscheduledItems.map(p => p._id)} strategy={verticalListSortingStrategy}>
                   {isLoading ? (
                     <div className="flex justify-center pt-10"><Loader2 className="animate-spin text-teal-600" /></div>
-                  ) : filteredUnscheduled.map(patient => (
+                  ) : sortedUnscheduledItems.map(patient => (
                     <SortablePatientCard 
                       key={patient._id} 
                       patient={patient} 
@@ -408,7 +488,7 @@ export default function NurseDashboard() {
                       }}
                     />
                   ))}
-                  {!isLoading && filteredUnscheduled.length === 0 && (
+                  {!isLoading && sortedUnscheduledItems.length === 0 && (
                     <div className="text-center py-10 text-gray-400 border-2 border-dashed rounded-xl bg-gray-50/50">
                        No unscheduled patients
                     </div>
