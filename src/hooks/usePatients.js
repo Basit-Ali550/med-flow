@@ -30,7 +30,7 @@ export function usePatients() {
     fetchPatients();
   }, [fetchPatients]);
 
-  const updatePatientStatus = async (patientId, newStatus) => {
+  const updatePatientStatus = useCallback(async (patientId, newStatus) => {
     try {
       await patientsApi.patch(patientId, { status: newStatus });
       return true;
@@ -38,9 +38,9 @@ export function usePatients() {
       handleClientError(error);
       return false;
     }
-  };
+  }, []);
 
-  const deletePatient = async (patientId) => {
+  const deletePatient = useCallback(async (patientId) => {
     try {
       await patientsApi.delete(patientId);
       setItems(prev => prev.filter(p => p._id !== patientId));
@@ -50,9 +50,9 @@ export function usePatients() {
       handleClientError(error);
       return false;
     }
-  };
+  }, []);
 
-  const updatePatient = async (patientId, data) => {
+  const updatePatient = useCallback(async (patientId, data) => {
       try {
           await patientsApi.patch(patientId, data);
           return true;
@@ -60,7 +60,7 @@ export function usePatients() {
           handleClientError(error);
           return false;
       }
-  };
+  }, []);
 
   return {
     items,

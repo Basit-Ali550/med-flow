@@ -80,7 +80,12 @@ export function handleClientError(error, showToast = true) {
     message = error;
   } else if (error instanceof Error) {
     // If it's a custom error from our apiRequest handler
-    message = error.data?.message || error.message;
+    // Prioritize specific validation errors if available
+    if (error.data?.errors && Array.isArray(error.data.errors) && error.data.errors.length > 0) {
+       message = error.data.errors[0]; 
+    } else {
+       message = error.data?.message || error.message;
+    }
   }
 
   if (showToast) {

@@ -72,11 +72,11 @@ export default function NurseLogin() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-5">
       {/* Login Icon */}
-     <Image src={Login} alt="Logo" width={200} height={200} />
+     <Image src={Login} alt="Logo" width={100} height={100} />
 
       {/* Login Form */}
       <form className="w-full max-w-xl" onSubmit={handleSubmit}>
-        <div className="my-12">
+        <div className="my-8">
           <Label htmlFor="username">Username</Label>
           <Input
             id="username"
@@ -90,7 +90,7 @@ export default function NurseLogin() {
           />
         </div>
 
-        <div className="mb-5">
+        <div className="mb-4">
           <Label htmlFor="password">Password</Label>
           <div className="relative mt-1">
             <Input
