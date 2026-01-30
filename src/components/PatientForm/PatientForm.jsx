@@ -303,14 +303,14 @@ export default function PatientForm({
               type="button"
               variant="outline"
               onClick={onCancel}
-              className="px-8 py-2 rounded-full border-gray-300 hover:bg-gray-50"
+              className="px-8 py-2 rounded-full cursor-pointer border-gray-300 hover:bg-gray-50"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-2 rounded-full shadow-lg hover:shadow-xl transition-all"
+              className="bg-teal-600 hover:bg-teal-700 cursor-pointer text-white px-8 py-2 rounded-full shadow-lg hover:shadow-xl transition-all"
             >
               {isSubmitting ? "Submitting..." : submitLabel}
             </Button>
