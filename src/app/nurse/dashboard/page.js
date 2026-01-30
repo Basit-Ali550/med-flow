@@ -122,6 +122,22 @@ export default function NurseDashboard() {
 
     // Logic: Move Left -> Right (Unscheduled -> Scheduled)
     if (draggedItem.status === PATIENT_STATUS.WAITING && isOverScheduled) {
+      // Check if vitals exist before moving to Triage/AI
+      const hasVitals = draggedItem.vitalSigns && (
+        draggedItem.vitalSigns.bloodPressureSys ||
+        draggedItem.vitalSigns.heartRate ||
+        draggedItem.vitalSigns.temperature ||
+        draggedItem.vitalSigns.o2Saturation
+      );
+
+      if (!hasVitals) {
+        toast.error("Vitals required before Triage", {
+          description: "Please record patient vitals first."
+        });
+        openModal('VITALS', draggedItem);
+        return; // Stop the drag/update
+      }
+
       newStatus = PATIENT_STATUS.TRIAGED;
       updates = { status: newStatus };
       // OPEN AI ONLY
@@ -241,6 +257,13 @@ export default function NurseDashboard() {
       />
 
       <main className="max-w-[1600px] mx-auto p-6">
+
+        {/* --- Actions --- */}
+        <DashboardActions
+          searchQuery={searchQuery}
+          onSearchChange={(e) => setSearchQuery(e.target.value)}
+          onAddClick={handleAddPatient}
+        />
 
         {/* --- Top Stats Row --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -383,14 +406,7 @@ export default function NurseDashboard() {
       </main>
 
       {/* Floating Action Button */}
-      <div className="fixed bottom-8 right-8">
-        <Button
-          className="h-14 w-14 rounded-full bg-black hover:bg-gray-800 shadow-xl flex items-center justify-center"
-          onClick={handleAddPatient}
-        >
-          <UserPlus className="w-6 h-6 text-white" />
-        </Button>
-      </div>
+
 
     </div>
   );

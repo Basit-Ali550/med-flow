@@ -38,7 +38,13 @@ export const TriagedPatientCard = ({
     const vitals = patient.vitalSigns || {};
 
     // AI Analysis (Only show if present)
-    const aiAnalysis = patient.aiAnalysis || patient.nurseNotes; // Fallback to nurseNotes if analysis missing, or hide
+    // AI Analysis (Only show if present)
+    let aiAnalysis = patient.aiAnalysis || patient.nurseNotes;
+
+    // Safety check if aiAnalysis is an object (causing the "Objects are not valid as a React child" error)
+    if (typeof aiAnalysis === 'object' && aiAnalysis !== null) {
+        aiAnalysis = aiAnalysis.reasoning || aiAnalysis.description || "AI Analysis available";
+    }
 
     // Vitals Display Helpers
     const bpDisplay = vitals.bloodPressureSys && vitals.bloodPressureDia
