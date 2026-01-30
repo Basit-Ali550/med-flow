@@ -137,8 +137,16 @@ const patientSchema = new mongoose.Schema(
       type: Number, // in minutes
       default: null,
     },
+    
+    // AI Analysis Data
+    aiAnalysis: {
+       score: Number,
+       triageLevel: String,
+       reasoning: String,
+       recommendedActions: [String],
+       timestamp: { type: Date, default: Date.now }
+    },
 
-    // Staff Assignment
     assignedNurse: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Nurse',
@@ -182,6 +190,10 @@ const patientSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -221,7 +233,10 @@ patientSchema.index({ status: 1, triageLevel: 1 });
 patientSchema.index({ registeredAt: -1 });
 patientSchema.index({ fullName: 'text' });
 
-// Prevent model overwrite during hot reloads
+// Prevent model overwrite during hot reloads, but force refresh in dev if schema changed
+if (process.env.NODE_ENV === 'development') {
+  delete mongoose.models.Patient;
+}
 const Patient = mongoose.models.Patient || mongoose.model('Patient', patientSchema);
 
 export default Patient;

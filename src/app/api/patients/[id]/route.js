@@ -58,6 +58,9 @@ export async function PUT(request, { params }) {
       throw new AppError('Patient not found', 404);
     }
     
+    console.log("Updating Patient:", id);
+    console.log("Update Payload:", body);
+
     // Prepare update data
     const updateData = { ...body };
     
@@ -142,6 +145,33 @@ export async function PATCH(request, { params }) {
     
     return successResponse({ patient }, 'Patient updated successfully');
   } catch (error) {
+    // Handling Data Corruption: Self-Healing Mechanism
+    // If Mongoose fails to instantiate because aiAnalysis is a string (instead of object),
+    // we detect this specific error and fix it by unsetting the bad field.
+    if (error.message && error.message.includes("Cannot create property 'timestamp' on string")) {
+       console.warn(`[Self-Healing] Detected corrupted aiAnalysis for patient ${params.id}. Resetting field.`);
+       try {
+          await dbConnect();
+          const { id } = await params;
+          await Patient.collection.updateOne(
+             { _id: new mongoose.Types.ObjectId(id) },
+             { $unset: { aiAnalysis: "" } } // Remove corrupted field
+          );
+          
+          // Retry the original update
+          const body = await request.json().catch(() => ({})); 
+          const retryPatient = await Patient.findByIdAndUpdate(
+              id,
+              { $set: body },
+              { new: true, runValidators: true }
+          ).populate('assignedNurse', 'fullName username');
+          
+          return successResponse({ patient: retryPatient }, 'Patient updated successfully (after repair)');
+       } catch (retryError) {
+          return handleApiError(retryError);
+       }
+    }
+
     return handleApiError(error);
   }
 }
