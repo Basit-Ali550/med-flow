@@ -18,9 +18,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Plus, Search, Loader2 } from "lucide-react";
 
 // Custom Components
@@ -33,6 +30,7 @@ import { PatientCard } from "@/components/Dashboard/PatientCard";
 import { SortablePatientCard } from "@/components/Dashboard/SortablePatientCard";
 import { DroppableContainer } from "@/components/Dashboard/DroppableContainer";
 import { DashboardActions } from "@/components/Dashboard/DashboardActions";
+import { StatusCard } from "@/components/Dashboard/StatusCard";
 
 // Hooks
 import { usePatients } from "@/hooks/usePatients";
@@ -258,13 +256,11 @@ export default function NurseDashboard() {
             
             {/* --- Unscheduled Column (Left) --- */}
             <div className="flex flex-col gap-4">
-              <Card className="p-4 flex justify-between items-center shadow-sm border-gray-100">
-                <div>
-                   <h2 className="font-bold text-lg text-gray-900">unscheduled</h2>
-                   <p className="text-xs text-gray-500 font-medium">Waiting list</p>
-                </div>
-                <span className="text-2xl font-bold">{filteredUnscheduled.length}</span>
-              </Card>
+              <StatusCard 
+                title="unscheduled" 
+                subtitle="Waiting list" 
+                count={filteredUnscheduled.length} 
+              />
 
               {/* Droppable Area */}
               <DroppableContainer id="unscheduled-container" className="space-y-3 min-h-[300px] rounded-xl transition-all">
@@ -292,13 +288,11 @@ export default function NurseDashboard() {
 
             {/* --- Scheduled Column (Right) --- */}
             <div className="flex flex-col gap-4">
-               <Card className="p-4 flex justify-between items-center shadow-sm border-gray-100">
-                <div>
-                   <h2 className="font-bold text-lg text-gray-900">scheduled</h2>
-                   <p className="text-xs text-gray-500 font-medium">triaged list</p>
-                </div>
-                <span className="text-2xl font-bold">{filteredScheduled.length}</span>
-              </Card>
+               <StatusCard 
+                 title="scheduled" 
+                 subtitle="triaged list" 
+                 count={filteredScheduled.length} 
+               />
 
               {/* Droppable Area */}
               <DroppableContainer 
