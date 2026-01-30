@@ -61,19 +61,19 @@ export function Header({ title, subtitle, showMenu = true, className = "" }) {
             src={Logo}
             alt="MedFlow Logo"
             width={124}
-            height={59}
-            className="w-full h-[59px] object-contain select-none cursor-pointer"
+            height={49}
+            className="w-full h-[49px] object-contain select-none cursor-pointer"
             priority
             onClick={() => router.push("/nurse/dashboard")}
           />
         </div>
         {title && (
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center hidden md:block">
-            <h1 className="text-xl font-bold leading-tight tracking-tight">
+            <h1 className="text-xl sm:text-3xl text-white font-bold leading-tight tracking-tight">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-teal-100 text-xs opacity-90 font-medium tracking-wide">
+              <p className="text-[#FAFAFF] text-sm font-normal opacity-90  tracking-wide">
                 {subtitle}
               </p>
             )}
@@ -92,9 +92,9 @@ export function Header({ title, subtitle, showMenu = true, className = "" }) {
                 className={`flex items-center gap-2 p-2 rounded-xl transition-all duration-200 cursor-pointer `}
               >
                 {isDropdownOpen ? (
-                  <X className="w-6 h-6" />
+                  <X className="w-11 h-8" />
                 ) : (
-                  <Menu className="w-6 h-6" />
+                  <Menu className="w-11 h-8" />
                 )}
               </button>
               {isDropdownOpen && (

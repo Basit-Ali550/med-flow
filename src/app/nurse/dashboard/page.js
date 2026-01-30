@@ -198,7 +198,7 @@ export default function NurseDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       
       {/* --- Unified Modals Section --- */}
       <DeleteModal 
@@ -236,7 +236,7 @@ export default function NurseDashboard() {
       />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-8">
+      <main className="max-w-7xl mx-auto p-6">
         
         {/* Actions Bar */}
         <DashboardActions 
@@ -252,10 +252,10 @@ export default function NurseDashboard() {
           onDragStart={handleDragStart} 
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 sm:gap-24 gap-8">
             
-            {/* --- Unscheduled Column (Left) --- */}
-            <div className="flex flex-col gap-4">
+        
+            <div className="flex flex-col gap-8">
               <StatusCard 
                 title="unscheduled" 
                 subtitle="Waiting list" 
@@ -286,8 +286,8 @@ export default function NurseDashboard() {
               </DroppableContainer>
             </div>
 
-            {/* --- Scheduled Column (Right) --- */}
-            <div className="flex flex-col gap-4">
+          
+            <div className="flex flex-col gap-8">
                <StatusCard 
                  title="scheduled" 
                  subtitle="triaged list" 
@@ -297,8 +297,8 @@ export default function NurseDashboard() {
               {/* Droppable Area */}
               <DroppableContainer 
                 id="scheduled-container" 
-                className={`space-y-3 min-h-[300px] border-2 border-dashed rounded-xl p-4 transition-all ${
-                  filteredScheduled.length === 0 ? 'border-gray-300 bg-white flex items-center justify-center' : 'border-transparent'
+                className={`space-y-3 min-h-[300px] transition-all ${
+                  filteredScheduled.length === 0 ? ' bg-white flex items-center justify-center' : ''
                 }`}
               >
                  <SortableContext items={filteredScheduled.map(p => p._id)} strategy={verticalListSortingStrategy}>
@@ -315,7 +315,7 @@ export default function NurseDashboard() {
                     ))}
                     
                     {/* Persistent Drop Zone Placeholder */}
-                    <div className="mt-4 p-6 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-400 text-sm font-medium bg-gray-50/50 transition-colors hover:border-teal-200 hover:bg-teal-50/30">
+                    <div className="mt-4 w-full min-h-[100px] p-6 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-400 text-sm font-medium bg-gray-50/50 transition-colors hover:border-teal-200 hover:bg-teal-50/30">
                        Drag patients here for Triage
                     </div>
                  </SortableContext>

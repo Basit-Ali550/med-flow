@@ -47,16 +47,16 @@ export const PatientCard = ({
       {...dragHandleProps}
       onClick={() => onClick?.(patient)}
       className={cn(
-        "p-4 border shadow-sm transition-all group relative cursor-pointer active:cursor-grabbing hover:border-teal-400",
+        "p-4 bordershadow-sm  rounded-lg transition-all group relative cursor-pointer active:cursor-grabbing hover:border-teal-400",
         isOverlay
           ? "shadow-2xl rotate-2 scale-105 bg-white border-teal-500"
-          : "bg-white border-gray-100",
+          : "bg-white border-[#E4E4E4]",
       )}
     >
-      <div className="flex gap-3">
+      <div className="flex items-center gap-3">
         {/* Grip Handle */}
-        <div className="mt-1 text-gray-300 group-hover:text-teal-500 transition-colors">
-          <GripHorizontal className="w-5 h-5" />
+        <div className="mb-1 text-gray-300 group-hover:text-teal-500 transition-colors">
+          <span className="font-semibold text-gray-900 shrink-0">=</span>
         </div>
 
         {/* Content */}
@@ -95,11 +95,10 @@ export const PatientCard = ({
 
           {/* Symptoms */}
           <div className="text-sm text-gray-600 mb-3 flex gap-2">
-            <span className="font-semibold text-gray-900 shrink-0">=</span>
             <span className="font-semibold text-gray-700 shrink-0">
               Symptoms:
             </span>
-            <span className="truncate">{patient.symptoms}</span>
+            <span className="line-clamp-2 break-words">{patient.symptoms}</span>
           </div>
 
           {/* Footer Stats & Actions */}
