@@ -1,7 +1,8 @@
 import dbConnect from '@/lib/db';
 import Patient from '@/models/Patient';
-import { successResponse, errorResponse } from '@/lib/auth';
+import { successResponse } from '@/lib/auth';
 import { PATIENT_STATUS, TRIAGE_LEVELS } from '@/lib/constants';
+import { handleApiError } from '@/lib/error-handler';
 
 /**
  * GET /api/patients/stats
@@ -136,8 +137,8 @@ export async function GET(request) {
       statuses,
     });
   } catch (error) {
-    console.error('Get stats error:', error);
-    return errorResponse('Failed to fetch statistics', 500);
+    return handleApiError(error);
   }
 }
+
 

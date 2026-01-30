@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import PatientForm from "@/components/PatientForm/PatientForm";
 import { Loader2 } from "lucide-react";
 import { patientsApi } from "@/lib/api";
+import { handleClientError } from "@/lib/error-handler";
 
 /**
  * Transform API patient data to flat form values
@@ -42,7 +43,7 @@ export default function EditPatient() {
       const { data } = await patientsApi.getById(id);
       setInitialValues(transformPatientToFormValues(data.patient));
     } catch (error) {
-      toast.error(error.message || "Error loading patient data");
+      handleClientError(error);
       router.push("/nurse/dashboard");
     } finally {
       setLoading(false);
@@ -59,11 +60,12 @@ export default function EditPatient() {
       toast.success("Patient updated successfully!");
       setTimeout(() => router.push("/nurse/dashboard"), 1000);
     } catch (error) {
-      toast.error(error.message || "Update failed");
+      handleClientError(error);
     } finally {
       setSubmitting(false);
     }
   };
+
 
   const handleCancel = () => router.push("/nurse/dashboard");
 

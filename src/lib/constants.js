@@ -1,8 +1,4 @@
-/**
- * Shared constants used across the application
- */
 
-// Triage Levels
 export const TRIAGE_LEVELS = {
   CRITICAL: 'Critical',
   URGENT: 'Urgent',

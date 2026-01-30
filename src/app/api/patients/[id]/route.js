@@ -1,7 +1,8 @@
 import dbConnect from '@/lib/db';
 import Patient from '@/models/Patient';
 import '@/models/Nurse'; // Import to ensure schema is registered
-import { successResponse, errorResponse } from '@/lib/auth';
+import { successResponse } from '@/lib/auth';
+import { handleApiError, AppError } from '@/lib/error-handler';
 import mongoose from 'mongoose';
 
 /**
@@ -16,7 +17,7 @@ export async function GET(request, { params }) {
     
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return errorResponse('Invalid patient ID format', 400);
+      throw new AppError('Invalid patient ID format', 400);
     }
     
     const patient = await Patient.findById(id)
@@ -24,13 +25,12 @@ export async function GET(request, { params }) {
       .lean();
     
     if (!patient) {
-      return errorResponse('Patient not found', 404);
+      throw new AppError('Patient not found', 404);
     }
     
     return successResponse({ patient });
   } catch (error) {
-    console.error('Get patient error:', error);
-    return errorResponse('Failed to fetch patient', 500);
+    return handleApiError(error);
   }
 }
 
@@ -46,7 +46,7 @@ export async function PUT(request, { params }) {
     
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return errorResponse('Invalid patient ID format', 400);
+      throw new AppError('Invalid patient ID format', 400);
     }
     
     const body = await request.json();
@@ -55,7 +55,7 @@ export async function PUT(request, { params }) {
     const existingPatient = await Patient.findById(id);
     
     if (!existingPatient) {
-      return errorResponse('Patient not found', 404);
+      throw new AppError('Patient not found', 404);
     }
     
     // Prepare update data
@@ -108,15 +108,7 @@ export async function PUT(request, { params }) {
     
     return successResponse({ patient }, 'Patient updated successfully');
   } catch (error) {
-    console.error('Update patient error:', error);
-    
-    // Handle mongoose validation errors
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map((e) => e.message);
-      return errorResponse('Validation failed', 400, errors);
-    }
-    
-    return errorResponse('Failed to update patient', 500);
+    return handleApiError(error);
   }
 }
 
@@ -132,7 +124,7 @@ export async function PATCH(request, { params }) {
     
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return errorResponse('Invalid patient ID format', 400);
+      throw new AppError('Invalid patient ID format', 400);
     }
     
     const body = await request.json();
@@ -145,19 +137,12 @@ export async function PATCH(request, { params }) {
     ).populate('assignedNurse', 'fullName username');
     
     if (!patient) {
-      return errorResponse('Patient not found', 404);
+      throw new AppError('Patient not found', 404);
     }
     
     return successResponse({ patient }, 'Patient updated successfully');
   } catch (error) {
-    console.error('Patch patient error:', error);
-    
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map((e) => e.message);
-      return errorResponse('Validation failed', 400, errors);
-    }
-    
-    return errorResponse('Failed to update patient', 500);
+    return handleApiError(error);
   }
 }
 
@@ -173,13 +158,13 @@ export async function DELETE(request, { params }) {
     
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return errorResponse('Invalid patient ID format', 400);
+      throw new AppError('Invalid patient ID format', 400);
     }
     
     const patient = await Patient.findByIdAndDelete(id);
     
     if (!patient) {
-      return errorResponse('Patient not found', 404);
+      throw new AppError('Patient not found', 404);
     }
     
     return successResponse(
@@ -187,7 +172,6 @@ export async function DELETE(request, { params }) {
       'Patient deleted successfully'
     );
   } catch (error) {
-    console.error('Delete patient error:', error);
-    return errorResponse('Failed to delete patient', 500);
+    return handleApiError(error);
   }
 }

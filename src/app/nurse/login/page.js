@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn } from "lucide-react";
-import { authApi } from "@/lib/api";
+import { LogIn, Loader2 } from "lucide-react";
+import { authApi, isAuthenticated } from "@/lib/api";
+import { handleClientError } from "@/lib/error-handler";
 
 export default function NurseLogin() {
   const router = useRouter();
@@ -16,6 +17,16 @@ export default function NurseLogin() {
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.replace("/nurse/dashboard");
+    } else {
+      setIsCheckingAuth(false);
+    }
+  }, [router]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -42,11 +53,19 @@ export default function NurseLogin() {
         router.push("/nurse/dashboard");
       }, 1000);
     } catch (error) {
-      toast.error(error.message || "Login failed. Please check your credentials.");
+      handleClientError(error);
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-5">
@@ -98,4 +117,5 @@ export default function NurseLogin() {
     </div>
   );
 }
+
 

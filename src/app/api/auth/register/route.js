@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/db';
 import Nurse from '@/models/Nurse';
-import { successResponse, errorResponse } from '@/lib/auth';
+import { successResponse } from '@/lib/auth';
+import { handleApiError, AppError } from '@/lib/error-handler';
 
 /**
  * POST /api/auth/register
@@ -14,14 +15,12 @@ export async function POST(request) {
     
     // Validate required fields
     if (!username || !email || !password || !fullName) {
-      return errorResponse('All required fields must be provided', 400, {
-        required: ['username', 'email', 'password', 'fullName'],
-      });
+      throw new AppError('All required fields must be provided', 400);
     }
     
     // Validate password length
     if (password.length < 6) {
-      return errorResponse('Password must be at least 6 characters', 400);
+      throw new AppError('Password must be at least 6 characters', 400);
     }
     
     // Check if username or email already exists
@@ -31,7 +30,7 @@ export async function POST(request) {
     
     if (existingUser) {
       const field = existingUser.username === username ? 'Username' : 'Email';
-      return errorResponse(`${field} already exists`, 409);
+      throw new AppError(`${field} already exists`, 409);
     }
     
     // Create new nurse
@@ -59,14 +58,7 @@ export async function POST(request) {
       201
     );
   } catch (error) {
-    console.error('Registration error:', error.message);
-    
-    // Handle mongoose validation errors
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map(e => e.message);
-      return errorResponse('Validation failed', 400, errors);
-    }
-    
-    return errorResponse('Internal server error', 500);
+    return handleApiError(error);
   }
 }
+

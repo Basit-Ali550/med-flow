@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import PatientForm from "@/components/PatientForm/PatientForm";
 import { patientsApi } from "@/lib/api";
+import { handleClientError } from "@/lib/error-handler";
 
 export default function PatientRegistration() {
   const router = useRouter();
@@ -15,11 +16,12 @@ export default function PatientRegistration() {
       toast.success("Registration submitted successfully!");
       setTimeout(() => router.push("/patient/success"), 1500);
     } catch (error) {
-      toast.error(error.message || "Registration failed. Please try again.");
+      handleClientError(error);
     } finally {
       setSubmitting(false);
     }
   };
+
 
   const handleCancel = () => router.push("/");
 

@@ -1,7 +1,8 @@
 import dbConnect from '@/lib/db';
 import Patient from '@/models/Patient';
 import '@/models/Nurse'; // Import to ensure schema is registered
-import { successResponse, errorResponse } from '@/lib/auth';
+import { successResponse } from '@/lib/auth';
+import { handleApiError, AppError } from '@/lib/error-handler';
 
 /**
  * GET /api/patients
@@ -86,8 +87,7 @@ export async function GET(request) {
       },
     });
   } catch (error) {
-    console.error('Get patients error:', error);
-    return errorResponse('Failed to fetch patients', 500);
+    return handleApiError(error);
   }
 }
 
@@ -129,9 +129,7 @@ export async function POST(request) {
     
     // Validate required fields
     if (!fullName || !dateOfBirth || !symptoms) {
-      return errorResponse('Full name, date of birth, and symptoms are required', 400, {
-        required: ['fullName', 'dateOfBirth', 'symptoms'],
-      });
+      throw new AppError('Full name, date of birth, and symptoms are required', 400);
     }
     
     // Create vital signs object if any vital data provided
@@ -184,17 +182,10 @@ export async function POST(request) {
       201
     );
   } catch (error) {
-    console.error('Create patient error:', error);
-    
-    // Handle mongoose validation errors
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map((e) => e.message);
-      return errorResponse('Validation failed', 400, errors);
-    }
-    
-    return errorResponse('Failed to register patient', 500);
+    return handleApiError(error);
   }
 }
+
 
 /**
  * Simple triage level calculation based on vital signs

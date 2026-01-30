@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { patientsApi } from "@/lib/api";
+import { handleClientError } from "@/lib/error-handler";
 
 export function usePatients() {
   const [items, setItems] = useState([]);
@@ -19,7 +20,7 @@ export function usePatients() {
       
       setItems(data.data.patients || []);
     } catch (error) {
-      toast.error("Failed to load patients");
+      handleClientError(error);
     } finally {
       setIsLoading(false);
     }
@@ -34,7 +35,7 @@ export function usePatients() {
       await patientsApi.patch(patientId, { status: newStatus });
       return true;
     } catch (error) {
-      toast.error("Failed to update patient status");
+      handleClientError(error);
       return false;
     }
   };
@@ -45,8 +46,8 @@ export function usePatients() {
       setItems(prev => prev.filter(p => p._id !== patientId));
       toast.success("Patient deleted");
       return true;
-    } catch (e) {
-      toast.error("Could not delete");
+    } catch (error) {
+      handleClientError(error);
       return false;
     }
   };
@@ -60,4 +61,5 @@ export function usePatients() {
     deletePatient
   };
 }
+
 

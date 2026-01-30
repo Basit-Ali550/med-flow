@@ -1,15 +1,37 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Logo from "@/assets/Logo.svg";
-import { LogOut } from "lucide-react";
+import {
+  LogOut,
+  Menu,
+  User,
+  LayoutDashboard,
+  Settings,
+  ChevronDown,
+  X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { authApi } from "@/lib/api";
+import { authApi, getStoredNurse } from "@/lib/api";
 import { toast } from "sonner";
 
 export function Header({ title, subtitle, showMenu = true, className = "" }) {
   const router = useRouter();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const nurse = getStoredNurse();
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -24,6 +46,11 @@ export function Header({ title, subtitle, showMenu = true, className = "" }) {
     }
   };
 
+  const navItems = [
+    { label: "Dashboard", icon: LayoutDashboard, href: "/nurse/dashboard" },
+    { label: "Profile Settings", icon: Settings, href: "#" },
+  ];
+
   return (
     <header
       className={`bg-[#0D9488] text-white shadow-md sticky top-0 z-50 w-full ${className}`}
@@ -36,8 +63,9 @@ export function Header({ title, subtitle, showMenu = true, className = "" }) {
             alt="MedFlow Logo"
             width={124}
             height={59}
-            className="w-full h-[59px] object-contain select-none"
+            className="w-full h-[59px] object-contain select-none cursor-pointer"
             priority
+            onClick={() => router.push("/nurse/dashboard")}
           />
         </div>
 
@@ -56,23 +84,92 @@ export function Header({ title, subtitle, showMenu = true, className = "" }) {
         )}
 
         {/* Right Actions */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 relative" ref={dropdownRef}>
           {/* Mobile Title */}
           <div className="md:hidden text-right mr-2">
             <h1 className="text-sm font-bold">{title}</h1>
           </div>
 
           {showMenu && (
-            <button
-              onClick={handleLogout}
-              className="group flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-              title="Logout"
-            >
-              <LogOut className="w-5 h-5 text-teal-50 group-hover:text-white" />
-              <span className="hidden sm:inline text-sm font-semibold text-teal-50 group-hover:text-white">
-                Logout
-              </span>
-            </button>
+            <>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={`flex items-center gap-2 p-2 rounded-xl transition-all duration-200 cursor-pointer ${
+                  isDropdownOpen ? "bg-white/20" : "hover:bg-white/10"
+                }`}
+              >
+                <div className="hidden sm:flex flex-col items-end mr-2">
+                  <span className="text-sm font-bold leading-none">
+                    {nurse?.fullName || "Nurse User"}
+                  </span>
+                  <span className="text-[10px] text-teal-100 font-medium mt-1">
+                    {nurse?.department || "ER Dept"}
+                  </span>
+                </div>
+                <div className="bg-white/10 p-1.5 rounded-lg border border-white/20">
+                  {isDropdownOpen ? (
+                    <X className="w-6 h-6" />
+                  ) : (
+                    <Menu className="w-6 h-6" />
+                  )}
+                </div>
+              </button>
+              {/* Dropdown Menu */}
+              {isDropdownOpen && (
+                <div className="absolute right-0 top-full mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-60 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {/* User Profile Header */}
+                  <div className="p-5 bg-teal-50/50 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-teal-600 flex items-center justify-center shadow-lg shadow-teal-600/20">
+                        <User className="text-white w-6 h-6" />
+                      </div>
+                      <div className="flex flex-col overflow-hidden">
+                        <span className="text-gray-900 font-bold text-base truncate">
+                          {nurse?.fullName || "Nurse User"}
+                        </span>
+                        <span className="text-teal-600 text-xs font-semibold">
+                          {nurse?.username || "@nurse"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Menu Options */}
+                  <div className="p-2">
+                    {navItems.map((item) => (
+                      <button
+                        key={item.label}
+                        onClick={() => {
+                          if (item.href !== "#") router.push(item.href);
+                          setIsDropdownOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-teal-50 hover:text-teal-700 transition-all cursor-pointer font-semibold text-sm group"
+                      >
+                        <item.icon className="w-5 h-5 opacity-60 group-hover:opacity-100" />
+                        {item.label}
+                      </button>
+                    ))}
+
+                    <div className="h-px bg-gray-100 my-2 mx-2"></div>
+
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-600 hover:bg-rose-50 transition-all cursor-pointer font-bold text-sm group"
+                    >
+                      <LogOut className="w-5 h-5 opacity-80" />
+                      Logout Account
+                    </button>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-center">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                      MedFlow ER System v1.0
+                    </span>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

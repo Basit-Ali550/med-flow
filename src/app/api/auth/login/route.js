@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/db';
 import Nurse from '@/models/Nurse';
-import { generateToken, successResponse, errorResponse, getAuthCookieConfig } from '@/lib/auth';
+import { generateToken, successResponse, getAuthCookieConfig } from '@/lib/auth';
+import { handleApiError, AppError } from '@/lib/error-handler';
 
 /**
  * POST /api/auth/login
@@ -14,7 +15,7 @@ export async function POST(request) {
     
     // Validate input
     if (!username || !password) {
-      return errorResponse('Username/email and password are required', 400);
+      throw new AppError('Username/email and password are required', 400);
     }
     
     // Find nurse by username OR email
@@ -23,16 +24,16 @@ export async function POST(request) {
     }).select('+password');
     
     if (!nurse) {
-      return errorResponse('Invalid credentials', 401);
+      throw new AppError('Invalid credentials', 401);
     }
     
     if (!nurse.isActive) {
-      return errorResponse('Account is deactivated. Please contact admin.', 401);
+      throw new AppError('Account is deactivated. Please contact admin.', 401);
     }
     
     const isPasswordValid = await nurse.comparePassword(password);
     if (!isPasswordValid) {
-      return errorResponse('Invalid credentials', 401);
+      throw new AppError('Invalid credentials', 401);
     }
     
     // Update last login
@@ -62,8 +63,8 @@ export async function POST(request) {
     
     return response;
   } catch (error) {
-    console.error('Login error:', error);
-    return errorResponse('Internal server error', 500);
+    return handleApiError(error);
   }
 }
+
 
