@@ -420,7 +420,7 @@ function CompactVital({ label, value, unit, type, valSys }) {
       if (num < 60 || num > 100) colorClass = "text-red-600";
       else colorClass = "text-green-600";
     } else if (type === "Temp") {
-      if (num < 97.7 || num > 99.5) colorClass = "text-red-600";
+      if (num < 96.8 || num > 100.4) colorClass = "text-red-600";
       else colorClass = "text-green-600";
     } else if (type === "O2") {
       if (num < 90) colorClass = "text-red-600";
