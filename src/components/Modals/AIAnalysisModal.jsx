@@ -309,15 +309,6 @@ export function AIAnalysisModal({
                       >
                         {analysis.score}
                       </span>
-                      <div className="h-8 w-[2px] bg-gray-200"></div>
-                      <div className="text-right">
-                        <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                          Urgency
-                        </div>
-                        <div className="text-sm font-bold text-teal-600">
-                          {analysis.triageLevel}
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>

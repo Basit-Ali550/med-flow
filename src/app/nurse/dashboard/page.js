@@ -452,7 +452,7 @@ export default function NurseDashboard() {
             <div className="flex flex-col gap-8">
               <StatusCard 
                 title="unscheduled" 
-                subtitle="Waiting list" 
+                subtitle="Awaiting triage assessment" 
                 count={filteredUnscheduled.length} 
               />
 
@@ -484,8 +484,9 @@ export default function NurseDashboard() {
             <div className="flex flex-col gap-8">
                <StatusCard 
                  title="scheduled" 
-                 subtitle="triaged list" 
+                 subtitle="AI-prioritized • Drag to reorder" 
                  count={filteredScheduled.length} 
+                 criticalCount={filteredScheduled.filter(p => (p.aiAnalysis?.score || 0) >= 80 || p.triageLevel === 'Critical').length}
                />
 
               {/* Droppable Area */}
