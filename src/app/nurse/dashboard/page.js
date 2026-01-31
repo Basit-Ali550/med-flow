@@ -409,6 +409,7 @@ export default function NurseDashboard() {
         onClose={closeModal}
         patient={activeModal.patient}
         onAnalysisComplete={handleAnalysisComplete}
+        forceAnalysis={activeModal.meta?.forceAnalysis} // Use meta to toggle force run
       />
 
   
@@ -505,8 +506,12 @@ export default function NurseDashboard() {
                         onClick={handleHistoryClick} // Card click opens History
                         onPin={handlePin}
                         onTreatment={handleTreatmentClick} // Treatment button opens Treatment
+                        onReAnalyze={(patient) => {
+                          // Force Re-Run
+                          openModal('AI', patient, { forceAnalysis: true });
+                        }}
                         onAIAnalysis={(patient) => {
-                          // Always open AI generation modal to re-analyze
+                          // Just View (default behavior since no forceAnalysis passed)
                           openModal('AI', patient);
                         }}
                       />

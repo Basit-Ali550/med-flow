@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn, calculateAge, formatWaitTime } from "@/lib/utils";
 import { PATIENT_STATUS } from "@/lib/constants";
-import { SquareArrowOutUpRight } from "lucide-react";
+import { SquareArrowOutUpRight, SquareArrowRight } from "lucide-react";
 import {
   Pencil,
   Trash2,
@@ -13,6 +13,7 @@ import {
   Activity,
   Pin,
   Stethoscope,
+  BrainCircuit, // Added
 } from "lucide-react";
 
 export const PatientCard = ({
@@ -27,6 +28,7 @@ export const PatientCard = ({
   onPin,
   onAIAnalysis, // New prop
   onTreatment, // New prop
+  onReAnalyze, // New prop
 }) => {
   const [waitTimeDisplay, setWaitTimeDisplay] = useState(
     formatWaitTime(patient.registeredAt),
@@ -169,6 +171,18 @@ export const PatientCard = ({
             </div>
 
             <div className="flex gap-1 relative z-10">
+              {onReAnalyze && patient.status !== PATIENT_STATUS.WAITING && (
+                <ActionButton
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onReAnalyze?.(patient);
+                  }}
+                  icon={<BrainCircuit className="w-4 h-4" />}
+                  className="hover:text-teal-600"
+                  title="Re-run AI Analysis"
+                />
+              )}
+
               {onVitals && (
                 <ActionButton
                   onClick={(e) => {
@@ -208,7 +222,7 @@ export const PatientCard = ({
                     e.stopPropagation();
                     onTreatment?.(patient);
                   }}
-                  icon={<SquareArrowOutUpRight className="w-4 h-4" />}
+                  icon={<SquareArrowRight className="w-4 h-4" />}
                   className="hover:text-purple-600"
                   title="Send to Treatment"
                 />

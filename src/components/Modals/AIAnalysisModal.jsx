@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, calculateAge } from "@/lib/utils";
 import {
   X,
   BrainCircuit,
@@ -18,6 +18,7 @@ export function AIAnalysisModal({
   onClose,
   patient,
   onAnalysisComplete,
+  forceAnalysis = false, // New prop
 }) {
   const [loading, setLoading] = useState(true);
   const [analysis, setAnalysis] = useState(null);
@@ -32,14 +33,15 @@ export function AIAnalysisModal({
       return;
     }
 
+    setLoading(true); // Ensure loading state is set when generating
+
     try {
       const prompt = `
         You are an expert Triage Nurse Assistant. Analyze the following patient data and provide a triage assessment.
         
         Patient Data:
-        Patient Data:
         - Name: ${patient.fullName || "Unknown"}
-        - Age: ${patient.age || "Unknown"}
+        - Age: ${patient.age || calculateAge(patient.dateOfBirth) || "Unknown"}
         - Gender: ${patient.gender || "Unknown"}
         - Symptoms: ${patient.symptoms}
         - Pain Level: ${patient.painLevel}/10
@@ -143,18 +145,28 @@ export function AIAnalysisModal({
 
   useEffect(() => {
     if (isOpen && patient) {
-      // Improved check: Use optional chaining and check against null/undefined explicitly
-      // to handle score = 0 cases.
-      // Force re-analysis every time the modal is opened
-      console.log("Starting new analysis...");
-      generateAnalysis();
+      if (forceAnalysis) {
+        console.log("Forcing new AI analysis...");
+        generateAnalysis();
+      } else if (
+        patient.aiAnalysis &&
+        (patient.aiAnalysis.score !== undefined || patient.aiAnalysis.reasoning)
+      ) {
+        console.log("Using existing AI analysis...");
+        setAnalysis(patient.aiAnalysis);
+        setLoading(false);
+        setError(null);
+      } else {
+        console.log("No existing analysis found, generating new...");
+        generateAnalysis();
+      }
     } else {
       // Reset state when closed
       setLoading(true);
       setAnalysis(null);
       setError(null);
     }
-  }, [isOpen, patient, generateAnalysis]);
+  }, [isOpen, patient, generateAnalysis, forceAnalysis]);
 
   if (!isOpen) return null;
 
@@ -228,7 +240,10 @@ export function AIAnalysisModal({
                       {patient.fullName}
                     </h3>
                     <p className="text-sm text-gray-500 font-medium mt-1">
-                      {patient.age || "N/A"} Years • {patient.gender}
+                      {patient.age ||
+                        calculateAge(patient.dateOfBirth) ||
+                        "N/A"}{" "}
+                      Years • {patient.gender}
                     </p>
                     {/* Pain & Wait - Below Age/Gender */}
                     <div className="flex flex-wrap gap-2 mt-3">
