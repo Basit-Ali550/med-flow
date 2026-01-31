@@ -360,14 +360,7 @@ export function AIAnalysisModal({
                       />
                       <CompactVital
                         label="Temp"
-                        value={
-                          patient.vitalSigns?.temperature
-                            ? (
-                                (patient.vitalSigns.temperature * 9) / 5 +
-                                32
-                              ).toFixed(1)
-                            : undefined
-                        }
+                        value={patient.vitalSigns?.temperature}
                         unit="°F"
                         type="Temp"
                       />
