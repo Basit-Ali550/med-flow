@@ -254,8 +254,8 @@ export default function NurseDashboard() {
             status: newStatus, 
             waitTime 
         };
-        const hasAnalysis = draggedItem.aiAnalysis && draggedItem.aiAnalysis.score != null;
-        openModal(hasAnalysis ? 'AI_VIEW' : 'AI', updatedItemForModal);
+        // Always open AI generation modal
+        openModal('AI', updatedItemForModal);
       }
 
       // API Call
@@ -468,20 +468,6 @@ export default function NurseDashboard() {
                       onDelete={handleDeleteClick}
                       onHistory={handleHistoryClick}
                       onVitals={handleVitalsClick}
-                      onTriageChange={async (patient, newLevel) => {
-                          setItems(prev => prev.map(p => p._id === patient._id ? { 
-                              ...p, 
-                              triageLevel: newLevel,
-                              aiAnalysis: { ...p.aiAnalysis, triageLevel: newLevel }
-                          } : p));
-                          
-                          try {
-                              await updatePatient(patient._id, { triageLevel: newLevel });
-                              toast.success("Priority level updated");
-                          } catch (error) {
-                              toast.error("Failed to update priority");
-                          }
-                      }}
                     />
                   ))}
                   {!isLoading && sortedUnscheduledItems.length === 0 && (
@@ -504,8 +490,8 @@ export default function NurseDashboard() {
               {/* Droppable Area */}
               <DroppableContainer 
                 id="scheduled-container" 
-                className={`space-y-3 min-h-[300px] transition-all ${
-                  sortedScheduledItems.length === 0 ? ' bg-white flex items-center justify-center' : ''
+                className={`space-y-3 min-h-[200px] transition-all ${
+                  sortedScheduledItems.length === 0 ? ' flex items-center justify-center' : ''
                 }`}
               >
                  <SortableContext items={sortedScheduledItems.map(p => p._id)} strategy={verticalListSortingStrategy}>
@@ -519,22 +505,6 @@ export default function NurseDashboard() {
                         onVitals={handleVitalsClick}
                         onClick={handleCardClick}
                         onPin={handlePin}
-                        onTriageChange={async (patient, newLevel) => {
-                            // Optimistic Update
-                            setItems(prev => prev.map(p => p._id === patient._id ? { 
-                                ...p, 
-                                triageLevel: newLevel,
-                                aiAnalysis: { ...p.aiAnalysis, triageLevel: newLevel } // Sync AI display too
-                            } : p));
-                            
-                            try {
-                                await updatePatient(patient._id, { triageLevel: newLevel });
-                                toast.success("Priority level updated");
-                            } catch (error) {
-                                toast.error("Failed to update priority");
-                               
-                            }
-                        }}
                         onAIAnalysis={(patient) => {
                           // Always open AI generation modal to re-analyze
                           openModal('AI', patient);
@@ -543,7 +513,11 @@ export default function NurseDashboard() {
                     ))}
                     
                     {/* Persistent Drop Zone Placeholder */}
-                  
+                    {sortedScheduledItems.length === 0 && (
+                      <div className="h-30 w-full border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center text-gray-400 font-medium">
+                        Drag patients here for Triage
+                      </div>
+                    )}
                  </SortableContext>
               </DroppableContainer>
             </div>

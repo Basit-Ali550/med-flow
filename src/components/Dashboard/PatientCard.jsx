@@ -6,14 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn, calculateAge, formatWaitTime } from "@/lib/utils";
 import { PATIENT_STATUS } from "@/lib/constants";
 
-import {
-  Pencil,
-  Trash2,
-  History,
-  Activity,
-  Pin,
-  BrainCircuit,
-} from "lucide-react";
+import { Pencil, Trash2, History, Activity, Pin } from "lucide-react";
 
 export const PatientCard = ({
   patient,
@@ -25,7 +18,6 @@ export const PatientCard = ({
   dragHandleProps,
   isOverlay,
   onPin,
-  onTriageChange,
   onAIAnalysis, // New prop
 }) => {
   const [waitTimeDisplay, setWaitTimeDisplay] = useState(
