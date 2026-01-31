@@ -5,16 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn, calculateAge, formatWaitTime } from "@/lib/utils";
 import { PATIENT_STATUS } from "@/lib/constants";
-import { SquareArrowOutUpRight, SquareArrowRight } from "lucide-react";
-import {
-  Pencil,
-  Trash2,
-  History,
-  Activity,
-  Pin,
-  Stethoscope,
-  BrainCircuit, // Added
-} from "lucide-react";
+import { SquareArrowRight } from "lucide-react";
+import { Pencil, Trash2, Activity, Pin, BrainCircuit } from "lucide-react";
 
 export const PatientCard = ({
   patient,
@@ -26,9 +18,10 @@ export const PatientCard = ({
   dragHandleProps,
   isOverlay,
   onPin,
-  onAIAnalysis, // New prop
-  onTreatment, // New prop
-  onReAnalyze, // New prop
+
+  onAIAnalysis,
+  onTreatment,
+  onReAnalyze,
 }) => {
   const [waitTimeDisplay, setWaitTimeDisplay] = useState(
     formatWaitTime(patient.registeredAt),
@@ -137,16 +130,12 @@ export const PatientCard = ({
             </div>
           </div>
 
-          {/* Priority Section - Static Badge Only (Dropdown Removed) */}
-
-          {/* Symptoms (Restored) */}
           <div className="text-sm text-gray-600 mb-3 flex gap-2">
             <span className="font-semibold text-gray-700 shrink-0">
               Symptoms:
             </span>
             <span className="line-clamp-2 break-words">{patient.symptoms}</span>
           </div>
-          {/* Footer Stats & Actions */}
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
               <Badge

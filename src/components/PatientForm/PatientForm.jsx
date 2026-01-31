@@ -21,8 +21,8 @@ const baseSchema = {
   fullName: Yup.string()
     .min(2, "Name must be at least 2 characters")
     .matches(
-      /^[A-Za-z\s\-']+$/,
-      "Name can only contain letters, spaces, hyphens, and apostrophes",
+      /^[\p{L}\s\-']+$/u,
+      "Name must contain letters only (no numbers or special symbols)",
     )
     .required("Full name is required"),
   dateOfBirth: Yup.date()

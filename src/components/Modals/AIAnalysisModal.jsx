@@ -18,7 +18,7 @@ export function AIAnalysisModal({
   onClose,
   patient,
   onAnalysisComplete,
-  forceAnalysis = false, // New prop
+  forceAnalysis = false,
 }) {
   const [loading, setLoading] = useState(true);
   const [analysis, setAnalysis] = useState(null);
@@ -33,7 +33,7 @@ export function AIAnalysisModal({
       return;
     }
 
-    setLoading(true); // Ensure loading state is set when generating
+    setLoading(true);
 
     try {
       const prompt = `
@@ -58,7 +58,7 @@ export function AIAnalysisModal({
         Return a VALID JSON object with the following fields:
         1. "score": A number between 0-100 indicating urgency (100 = Critical/Immediate).
         2. "triageLevel": One of ["Critical", "Urgent", "Semi-Urgent", "Non-Urgent"].
-        3. "reasoning": A concise, professional clinical explanation (3-6 sentences) justifying the score. You MUST facilitate the patient by Name (${patient.fullName}) and explicitly mention how their specific lifestyle factors (e.g., Smoking, Alcohol) or chronic conditions impact this specific case.
+        3. "reasoning": A concise, professional clinical explanation (3-6 sentences) justifying the score. You MUST facilitate the patient by explicitly mention how their specific lifestyle factors (e.g., Smoking, Alcohol) or chronic conditions impact this specific case.
         4. "recommendedActions": An array of 3-8 specific, short clinical actions (e.g., "Administer 500mg Paracetamol", "Order ECG", "Monitor BP every 15m").
         
         Respond ONLY with the JSON. Do not include markdown formatting.
@@ -95,7 +95,6 @@ export function AIAnalysisModal({
       const data = await response.json();
       let content = data.choices[0].message.content;
 
-      // Clean code blocks if present
       content = content
         .replace(/```json/g, "")
         .replace(/```/g, "")
@@ -103,13 +102,11 @@ export function AIAnalysisModal({
 
       const result = JSON.parse(content);
       if (result.score === undefined || result.score === null) {
-        result.score = 0; // Fallback to 0 if missing
+        result.score = 0;
       }
 
-      // Auto-Map Valid Enums for Mongoose Persistence
       const validLevels = ["Critical", "Urgent", "Semi-Urgent", "Non-Urgent"];
       if (!validLevels.includes(result.triageLevel)) {
-        // Robust Fallback mapping
         if (result.triageLevel === "Less Urgent")
           result.triageLevel = "Semi-Urgent";
         else if (result.triageLevel === "Emergent")
@@ -146,22 +143,18 @@ export function AIAnalysisModal({
   useEffect(() => {
     if (isOpen && patient) {
       if (forceAnalysis) {
-        console.log("Forcing new AI analysis...");
         generateAnalysis();
       } else if (
         patient.aiAnalysis &&
         (patient.aiAnalysis.score !== undefined || patient.aiAnalysis.reasoning)
       ) {
-        console.log("Using existing AI analysis...");
         setAnalysis(patient.aiAnalysis);
         setLoading(false);
         setError(null);
       } else {
-        console.log("No existing analysis found, generating new...");
         generateAnalysis();
       }
     } else {
-      // Reset state when closed
       setLoading(true);
       setAnalysis(null);
       setError(null);
@@ -226,9 +219,7 @@ export function AIAnalysisModal({
             </div>
           ) : (
             <div className="flex flex-col md:flex-row h-full min-h-[500px]">
-              {/* LEFT COLUMN: Patient Context (40%) */}
               <div className="md:w-[35%] bg-gray-50 border-r border-gray-100 p-6 flex flex-col gap-4">
-                {/* Identity */}
                 <div className="space-y-3">
                   <div className="w-16 h-16 rounded-2xl bg-white border border-gray-200 shadow-sm flex items-center justify-center mb-2">
                     <span className="text-2xl font-bold text-teal-700">
@@ -245,7 +236,6 @@ export function AIAnalysisModal({
                         "N/A"}{" "}
                       Years • {patient.gender}
                     </p>
-                    {/* Pain & Wait - Below Age/Gender */}
                     <div className="flex flex-wrap gap-2 mt-3">
                       <Badge
                         variant="outline"
@@ -270,7 +260,6 @@ export function AIAnalysisModal({
                   </div>
                 </div>
 
-                {/* Symptoms Section */}
                 <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mt-auto">
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
                     Symptoms
@@ -281,9 +270,7 @@ export function AIAnalysisModal({
                 </div>
               </div>
 
-              {/* RIGHT COLUMN: AI Analysis & Vitals (60%) */}
               <div className="md:w-[65%] p-6 bg-white overflow-y-auto max-h-[80vh]">
-                {/* Top Section: Score & Triage Level */}
                 <div className="flex justify-between items-start mb-8">
                   <div>
                     <h4 className="text-gray-900 font-bold text-lg flex items-center gap-2">
@@ -314,7 +301,6 @@ export function AIAnalysisModal({
                 </div>
 
                 <div className="space-y-6">
-                  {/* Reasoning */}
                   <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                     <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                       <Activity className="w-3 h-3" /> Analysis Reasoning
@@ -324,7 +310,6 @@ export function AIAnalysisModal({
                     </p>
                   </div>
 
-                  {/* Recommended Actions */}
                   <div>
                     <h5 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                       <CheckCircle2 className="w-3 h-3 text-teal-500" />{" "}
@@ -354,7 +339,6 @@ export function AIAnalysisModal({
                     </div>
                   </div>
 
-                  {/* Live VitalsRow */}
                   <div className="pt-4 border-t border-gray-100">
                     <h5 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
                       Patient Vitals
@@ -388,17 +372,15 @@ export function AIAnalysisModal({
                   </div>
                 </div>
 
-                {/* Footer Actions */}
                 <div className="mt-8 flex justify-end relative z-200">
                   <Button
                     type="button"
                     onClick={(e) => {
-                      e.stopPropagation(); // Prevent bubbling
-                      console.log("Acknowledge clicked");
+                      e.stopPropagation();
                       if (onAnalysisComplete) {
                         onAnalysisComplete({
                           ...patient,
-                          triageLevel: analysis.triageLevel, // Update top-level triage
+                          triageLevel: analysis.triageLevel,
                           aiAnalysis: {
                             score: analysis.score,
                             triageLevel: analysis.triageLevel,
@@ -428,7 +410,7 @@ function CompactVital({ label, value, unit, type, valSys }) {
   let colorClass = "text-gray-900";
 
   if (value && value !== "--") {
-    const num = parseFloat(value); // For BP this might be NaN, handled below
+    const num = parseFloat(value);
 
     if (type === "HR") {
       if (num < 60 || num > 100) colorClass = "text-red-600";

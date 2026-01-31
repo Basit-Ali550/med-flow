@@ -2,10 +2,6 @@ import React from "react";
 import { Search, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
-/**
- * Reusable action bar for dashboard with search and action button
- */
 export function DashboardActions({
   searchQuery,
   onSearchChange,
@@ -18,7 +14,6 @@ export function DashboardActions({
     <div
       className={`flex flex-col sm:flex-row justify-end gap-4 mb-8 ${className}`}
     >
-      {/* Search Input Field */}
       <div className="relative w-full sm:w-80 group">
         <Input
           placeholder={searchPlaceholder}
@@ -26,13 +21,10 @@ export function DashboardActions({
           value={searchQuery}
           onChange={onSearchChange}
         />
-        {/* Search Icon on the right side */}
         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-teal-600 transition-colors">
           <Search className="w-4 h-4" />
         </div>
       </div>
-
-      {/* Action Button */}
       <Button
         onClick={onAddClick}
         className="rounded-full bg-teal-600 hover:bg-teal-700 px-6 shadow-md shadow-teal-600/20 cursor-pointer active:scale-95 transition-all text-white font-semibold"

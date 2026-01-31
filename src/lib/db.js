@@ -26,13 +26,11 @@ async function dbConnect() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of hanging
+      serverSelectionTimeoutMS: 5000, 
     };
 
-    console.log('🔄 Attempting MongoDB connection...');
     cached.promise = mongoose.connect(MONGODB_URI, opts)
       .then((mongooseInstance) => {
-        console.log('✅ MongoDB Connected');
         return mongooseInstance;
       })
       .catch((error) => {
