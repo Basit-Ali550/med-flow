@@ -19,12 +19,11 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 
-import { Plus, Search, Loader2 } from "lucide-react";
+import {  Loader2 } from "lucide-react";
 
 // Custom Components
 import { DeleteModal } from "@/components/Modals/DeleteModal";
 import { AIAnalysisModal } from "@/components/Modals/AIAnalysisModal";
-import { AIAnalysisViewModal } from "@/components/Modals/AIAnalysisViewModal";
 import { TreatmentConfirmationModal } from "@/components/Modals/TreatmentConfirmationModal";
 import { UpdateVitalsModal } from "@/components/Modals/UpdateVitalsModal";
 import { PatientHistoryModal } from "@/components/Modals/PatientHistoryModal";
@@ -114,7 +113,14 @@ export default function NurseDashboard() {
       return new Date(a.registeredAt) - new Date(b.registeredAt);
     }
 
-    // 3. Non-pinned patients: ALWAYS sort by registration time (descending - newest first)
+    // 3. Non-pinned patients: Sort by AI Score (Descending), then Registration (Descending)
+    const scoreA = a.aiAnalysis?.score || 0;
+    const scoreB = b.aiAnalysis?.score || 0;
+    
+    if (scoreA !== scoreB) {
+        return scoreB - scoreA; // Higher score first
+    }
+    
     return new Date(b.registeredAt) - new Date(a.registeredAt);
   });
 
@@ -405,11 +411,7 @@ export default function NurseDashboard() {
         onAnalysisComplete={handleAnalysisComplete}
       />
 
-      <AIAnalysisViewModal 
-        isOpen={activeModal.type === 'AI_VIEW'}
-        onClose={closeModal}
-        patient={activeModal.patient}
-      />
+  
 
       <TreatmentConfirmationModal
         isOpen={activeModal.type === 'TREATMENT'}
@@ -534,8 +536,8 @@ export default function NurseDashboard() {
                             }
                         }}
                         onAIAnalysis={(patient) => {
-                          const hasAnalysis = patient.aiAnalysis && patient.aiAnalysis.score != null;
-                          openModal(hasAnalysis ? 'AI_VIEW' : 'AI', patient);
+                          // Always open AI generation modal to re-analyze
+                          openModal('AI', patient);
                         }}
                       />
                     ))}

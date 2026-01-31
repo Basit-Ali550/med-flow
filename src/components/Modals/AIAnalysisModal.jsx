@@ -137,14 +137,9 @@ export function AIAnalysisModal({
     if (isOpen && patient) {
       // Improved check: Use optional chaining and check against null/undefined explicitly
       // to handle score = 0 cases.
-      if (patient.aiAnalysis && patient.aiAnalysis.score != null) {
-        console.log("Using cached analysis:", patient.aiAnalysis);
-        setAnalysis(patient.aiAnalysis);
-        setLoading(false);
-      } else {
-        console.log("No valid analysis found, generating new...");
-        generateAnalysis();
-      }
+      // Force re-analysis every time the modal is opened
+      console.log("Starting new analysis...");
+      generateAnalysis();
     } else {
       // Reset state when closed
       setLoading(true);
@@ -355,20 +350,25 @@ export function AIAnalysisModal({
                         label="HR"
                         value={patient.vitalSigns?.heartRate}
                         unit="bpm"
+                        type="HR"
                       />
                       <CompactVital
                         label="BP"
                         value={`${patient.vitalSigns?.bloodPressureSys || "--"}/${patient.vitalSigns?.bloodPressureDia || "--"}`}
+                        valSys={patient.vitalSigns?.bloodPressureSys}
+                        type="BP"
                       />
                       <CompactVital
                         label="Temp"
                         value={patient.vitalSigns?.temperature}
                         unit="°C"
+                        type="Temp"
                       />
                       <CompactVital
                         label="O2"
                         value={patient.vitalSigns?.o2Saturation}
                         unit="%"
+                        type="O2"
                       />
                     </div>
                   </div>
@@ -396,7 +396,7 @@ export function AIAnalysisModal({
                       }
                       onClose();
                     }}
-                    className="bg-teal-600 hover:bg-teal-700 text-white rounded-full px-6 py-2 h-10 text-sm font-bold shadow-lg transition-all cursor-pointer pointer-events-auto"
+                    className="bg-[#0D9488]  text-white rounded-full px-6 py-2 h-10 text-sm font-bold shadow-lg transition-all cursor-pointer pointer-events-auto"
                   >
                     Acknowledge Assessment
                   </Button>
@@ -410,13 +410,39 @@ export function AIAnalysisModal({
   );
 }
 
-function CompactVital({ label, value, unit }) {
+function CompactVital({ label, value, unit, type, valSys }) {
+  let colorClass = "text-gray-900";
+
+  if (value && value !== "--") {
+    const num = parseFloat(value); // For BP this might be NaN, handled below
+
+    if (type === "HR") {
+      if (num < 60 || num > 100) colorClass = "text-red-600";
+      else colorClass = "text-green-600";
+    } else if (type === "Temp") {
+      if (num < 36.5 || num > 37.5) colorClass = "text-red-600";
+      else colorClass = "text-green-600";
+    } else if (type === "O2") {
+      if (num < 90) colorClass = "text-red-600";
+      else if (num < 95) colorClass = "text-yellow-600";
+      else colorClass = "text-green-600";
+    } else if (type === "BP") {
+      // Use systolic value passed separately
+      const sys = parseFloat(valSys);
+      if (!isNaN(sys)) {
+        if (sys >= 140 || sys < 90) colorClass = "text-red-600";
+        else if (sys >= 120) colorClass = "text-yellow-600";
+        else colorClass = "text-green-600";
+      }
+    }
+  }
+
   return (
     <div className="bg-gray-50 border border-gray-100 rounded-lg p-2 text-center">
       <div className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">
         {label}
       </div>
-      <div className="text-sm font-bold text-gray-900 truncate">
+      <div className={cn("text-sm font-bold truncate", colorClass)}>
         {value || "--"}{" "}
         <span className="text-[9px] font-normal text-gray-400">{unit}</span>
       </div>
