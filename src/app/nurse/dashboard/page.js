@@ -286,7 +286,7 @@ export default function NurseDashboard() {
     }
   };
 
-  const handleCardClick = (patient) => {
+  const handleTreatmentClick = (patient) => {
     // Only open for Scheduled/Triaged patients
     if (patient.status === PATIENT_STATUS.TRIAGED) {
       openModal('TREATMENT', patient);
@@ -501,11 +501,10 @@ export default function NurseDashboard() {
                         patient={patient} 
                         onEdit={handleEdit} 
                         onDelete={handleDeleteClick}
-                        onHistory={handleHistoryClick}
                         onVitals={handleVitalsClick}
-                        onClick={handleCardClick}
+                        onClick={handleHistoryClick} // Card click opens History
                         onPin={handlePin}
-                        onTreatment={handleCardClick} // Pass treatment handler
+                        onTreatment={handleTreatmentClick} // Treatment button opens Treatment
                         onAIAnalysis={(patient) => {
                           // Always open AI generation modal to re-analyze
                           openModal('AI', patient);

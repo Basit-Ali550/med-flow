@@ -169,17 +169,6 @@ export const PatientCard = ({
             </div>
 
             <div className="flex gap-1 relative z-10">
-              {onHistory && (
-                <ActionButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onHistory?.(patient);
-                  }}
-                  icon={<History className="w-4 h-4" />}
-                  className="hover:text-blue-600"
-                  title="Medical History"
-                />
-              )}
               {onVitals && (
                 <ActionButton
                   onClick={(e) => {
