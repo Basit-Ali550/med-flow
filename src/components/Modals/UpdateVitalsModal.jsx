@@ -42,15 +42,11 @@ export function UpdateVitalsModal({
 
   useEffect(() => {
     if (patient?.vitalSigns) {
-      // Convert Celsius to Fahrenheit for display if present
-      const tempC = patient.vitalSigns.temperature;
-      const tempF = tempC ? ((tempC * 9) / 5 + 32).toFixed(1) : "";
-
       setVitals({
         heartRate: patient.vitalSigns.heartRate || "",
         bloodPressureSys: patient.vitalSigns.bloodPressureSys || "",
         bloodPressureDia: patient.vitalSigns.bloodPressureDia || "",
-        temperature: tempF,
+        temperature: patient.vitalSigns.temperature || "",
         o2Saturation: patient.vitalSigns.o2Saturation || "",
       });
     } else {
@@ -75,17 +71,9 @@ export function UpdateVitalsModal({
 
     setIsSubmitting(true);
     try {
-      // Sanitize payload: Remove empty strings to avoid CastError/NaN on backend
       const payload = Object.entries(vitals).reduce((acc, [key, value]) => {
         if (value !== "" && value !== null && value !== undefined) {
-          // Convert Fahrenheit back to Celsius for API
-          if (key === "temperature") {
-            const tempF = parseFloat(value);
-            const tempC = ((tempF - 32) * 5) / 9;
-            acc[key] = parseFloat(tempC.toFixed(1));
-          } else {
-            acc[key] = value;
-          }
+          acc[key] = value;
         }
         return acc;
       }, {});
