@@ -13,6 +13,8 @@ import {
   Clipboard,
   Heart,
   Check as CheckIcon,
+  HeartOff,
+  CigaretteOff,
 } from "lucide-react";
 
 // Base Schema used for both
@@ -84,6 +86,77 @@ const defaultInitialValues = {
   o2Saturation: "",
 };
 
+// Helper for Validation Colors
+const getVitalColor = (type, value) => {
+  if (!value) return "border-gray-200 focus:border-teal-500";
+  const num = parseFloat(value);
+
+  switch (type) {
+    case "heartRate":
+      if (num < 40 || num > 150)
+        return "border-red-500 focus:border-red-600 bg-red-50";
+      if (num < 60 || num > 100)
+        return "border-amber-500 focus:border-amber-600 bg-amber-50";
+      return "border-emerald-500 focus:border-emerald-600 bg-emerald-50";
+
+    case "temperature":
+      // Fahrenheit Ranges
+      if (num < 95.0 || num > 103.1)
+        return "border-red-500 focus:border-red-600 bg-red-50";
+      if (num < 96.8 || num > 99.5)
+        return "border-amber-500 focus:border-amber-600 bg-amber-50";
+      return "border-emerald-500 focus:border-emerald-600 bg-emerald-50";
+
+    case "bloodPressureSys":
+      if (num < 90 || num > 180)
+        return "border-red-500 focus:border-red-600 bg-red-50";
+      if (num > 120)
+        return "border-amber-500 focus:border-amber-600 bg-amber-50";
+      return "border-emerald-500 focus:border-emerald-600 bg-emerald-50";
+
+    case "bloodPressureDia":
+      if (num < 60 || num > 110)
+        return "border-red-500 focus:border-red-600 bg-red-50";
+      if (num > 80)
+        return "border-amber-500 focus:border-amber-600 bg-amber-50";
+      return "border-emerald-500 focus:border-emerald-600 bg-emerald-50";
+
+    case "o2Saturation":
+      if (num < 85) return "border-red-500 focus:border-red-600 bg-red-50";
+      if (num < 95)
+        return "border-amber-500 focus:border-amber-600 bg-amber-50";
+      return "border-emerald-500 focus:border-emerald-600 bg-emerald-50";
+
+    default:
+      return "border-gray-200 focus:border-teal-500";
+  }
+};
+
+const getVitalMessage = (type, value) => {
+  if (!value) return null;
+  const num = parseFloat(value);
+
+  switch (type) {
+    case "heartRate":
+      if (num > 150) return "Critical High";
+      if (num < 40) return "Critical Low";
+      if (num > 100) return "Tachycardia";
+      if (num < 60) return "Bradycardia";
+      break;
+    case "temperature":
+      // Fahrenheit Messages
+      if (num > 102.2) return "High Fever";
+      if (num > 99.5) return "Fever";
+      if (num < 95) return "Hypothermia";
+      break;
+    case "o2Saturation":
+      if (num < 90) return "Critical Hypoxia";
+      if (num < 95) return "Low O2";
+      break;
+  }
+  return null;
+};
+
 export default function PatientForm({
   initialValues = defaultInitialValues,
   onSubmit,
@@ -96,25 +169,12 @@ export default function PatientForm({
     ...(showVitalSigns ? vitalSignsSchema : {}),
   });
 
-  // Convert Initial Values (C -> F for display)
-  const formInitialValues = {
-    ...initialValues,
-    temperature: initialValues.temperature
-      ? ((initialValues.temperature * 9) / 5 + 32).toFixed(1)
-      : initialValues.temperature,
-  };
+  // No conversion needed, native Fahrenheit
+  const formInitialValues = initialValues;
 
-  // Handle Submit (F -> C for API)
+  // Handle Submit
   const handleFormSubmit = (values, actions) => {
-    const submissionValues = { ...values };
-
-    if (submissionValues.temperature) {
-      const tempF = parseFloat(submissionValues.temperature);
-      const tempC = ((tempF - 32) * 5) / 9;
-      submissionValues.temperature = parseFloat(tempC.toFixed(1));
-    }
-
-    onSubmit(submissionValues, actions);
+    onSubmit(values, actions);
   };
 
   return (
@@ -294,41 +354,61 @@ export default function PatientForm({
                   Vital signs
                 </h2>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                 <div>
-                  <Label htmlFor="heartRate">Heart Rate (BPM)</Label>
+                  <Label htmlFor="heartRate" className="flex justify-between">
+                    Heart Rate (BPM)
+                    <span className="text-[10px] text-red-500 font-bold ml-2">
+                      {getVitalMessage("heartRate", values.heartRate)}
+                    </span>
+                  </Label>
                   <Field
                     as={Input}
                     id="heartRate"
                     name="heartRate"
                     type="number"
-                    className="mt-2 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className={`mt-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all duration-300 border ${getVitalColor("heartRate", values.heartRate)}`}
                   />
                 </div>
                 <div>
                   <Label>Blood Pressure</Label>
                   <div className="flex items-center gap-2 mt-2">
-                    <Field
-                      as={Input}
-                      id="bloodPressureSys"
-                      name="bloodPressureSys"
-                      type="number"
-                      placeholder="SYS"
-                      className="bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
-                    <span className="text-gray-400">/</span>
-                    <Field
-                      as={Input}
-                      id="bloodPressureDia"
-                      name="bloodPressureDia"
-                      type="number"
-                      placeholder="DIA"
-                      className="bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
+                    <div className="relative w-full">
+                      <Field
+                        as={Input}
+                        id="bloodPressureSys"
+                        name="bloodPressureSys"
+                        type="number"
+                        placeholder="SYS"
+                        className={`[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all duration-300 border text-center ${getVitalColor("bloodPressureSys", values.bloodPressureSys)}`}
+                      />
+                      <span className="absolute right-2 top-0.5 text-[8px] font-bold text-gray-400 uppercase">
+                        Sys
+                      </span>
+                    </div>
+                    <span className="text-gray-300 font-light text-xl">/</span>
+                    <div className="relative w-full">
+                      <Field
+                        as={Input}
+                        id="bloodPressureDia"
+                        name="bloodPressureDia"
+                        type="number"
+                        placeholder="DIA"
+                        className={`[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all duration-300 border text-center ${getVitalColor("bloodPressureDia", values.bloodPressureDia)}`}
+                      />
+                      <span className="absolute right-2 top-0.5 text-[8px] font-bold text-gray-400 uppercase">
+                        Dia
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="temperature">Temperature (°F)</Label>
+                  <Label htmlFor="temperature" className="flex justify-between">
+                    Temperature (°F)
+                    <span className="text-[10px] text-red-500 font-bold ml-2">
+                      {getVitalMessage("temperature", values.temperature)}
+                    </span>
+                  </Label>
                   <Field
                     as={Input}
                     id="temperature"
@@ -336,17 +416,25 @@ export default function PatientForm({
                     type="number"
                     step="0.1"
                     placeholder="98.6"
-                    className="mt-2 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className={`mt-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all duration-300 border ${getVitalColor("temperature", values.temperature)}`}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="o2Saturation">O2 Saturation (%)</Label>
+                  <Label
+                    htmlFor="o2Saturation"
+                    className="flex justify-between"
+                  >
+                    O2 Saturation (%)
+                    <span className="text-[10px] text-red-500 font-bold ml-2">
+                      {getVitalMessage("o2Saturation", values.o2Saturation)}
+                    </span>
+                  </Label>
                   <Field
                     as={Input}
                     id="o2Saturation"
                     name="o2Saturation"
                     type="number"
-                    className="mt-2 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className={`mt-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all duration-300 border ${getVitalColor("o2Saturation", values.o2Saturation)}`}
                   />
                 </div>
               </div>
@@ -356,7 +444,7 @@ export default function PatientForm({
           {/* Lifestyle Habits - Moved to Bottom */}
           <div className="flex items-center border-b pb-2 gap-2.5 my-8">
             <span className="bg-[#EFFDFA] p-2 rounded-full">
-              <Activity className="w-5 h-5 text-teal-600" />
+              <CigaretteOff className="w-5 h-5 text-teal-600" />
             </span>
             <h2 className="text-xl font-semibold text-gray-900">Habits</h2>
           </div>

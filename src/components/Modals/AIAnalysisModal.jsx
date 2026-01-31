@@ -360,8 +360,15 @@ export function AIAnalysisModal({
                       />
                       <CompactVital
                         label="Temp"
-                        value={patient.vitalSigns?.temperature}
-                        unit="°C"
+                        value={
+                          patient.vitalSigns?.temperature
+                            ? (
+                                (patient.vitalSigns.temperature * 9) / 5 +
+                                32
+                              ).toFixed(1)
+                            : undefined
+                        }
+                        unit="°F"
                         type="Temp"
                       />
                       <CompactVital
@@ -420,7 +427,7 @@ function CompactVital({ label, value, unit, type, valSys }) {
       if (num < 60 || num > 100) colorClass = "text-red-600";
       else colorClass = "text-green-600";
     } else if (type === "Temp") {
-      if (num < 36.5 || num > 37.5) colorClass = "text-red-600";
+      if (num < 97.7 || num > 99.5) colorClass = "text-red-600";
       else colorClass = "text-green-600";
     } else if (type === "O2") {
       if (num < 90) colorClass = "text-red-600";

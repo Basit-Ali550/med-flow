@@ -215,10 +215,10 @@ function calculateTriageLevel(vitalSigns, painLevel, isEmergency) {
     else if (vitalSigns.bloodPressureSys < 100 || vitalSigns.bloodPressureSys > 140) score += 1;
   }
   
-  // Temperature thresholds
+  // Temperature thresholds (Fahrenheit)
   if (vitalSigns.temperature) {
-    if (vitalSigns.temperature < 35 || vitalSigns.temperature > 40) score += 2;
-    else if (vitalSigns.temperature < 36 || vitalSigns.temperature > 38) score += 1;
+    if (vitalSigns.temperature < 95 || vitalSigns.temperature > 104) score += 2;
+    else if (vitalSigns.temperature < 96.8 || vitalSigns.temperature > 100.4) score += 1;
   }
   
   // O2 saturation thresholds

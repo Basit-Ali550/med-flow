@@ -19,8 +19,8 @@ const vitalSignsSchema = new mongoose.Schema(
     },
     temperature: {
       type: Number,
-      min: [30, 'Temperature cannot be below 30°C'],
-      max: [45, 'Temperature cannot exceed 45°C'],
+      min: [90, 'Temperature cannot be below 90°F'],
+      max: [115, 'Temperature cannot exceed 115°F'],
     },
     o2Saturation: {
       type: Number,

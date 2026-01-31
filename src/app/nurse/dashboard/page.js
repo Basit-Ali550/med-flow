@@ -432,7 +432,7 @@ export default function NurseDashboard() {
         onClose={closeModal}
         patient={activeModal.patient}
       />
-      <main className="max-w-7xl mx-auto p-6">
+      <main className="max-w-7xl mx-auto p-4">
 
         <DashboardActions 
           searchQuery={searchQuery}

@@ -26,7 +26,7 @@ export default function AllPatientsPage() {
     <div className="min-h-screen">
       <Header title="Treatment Room" subtitle="Patients currently under active care" />
       
-      <main className="max-w-7xl mx-auto p-6">
+      <main className="max-w-7xl mx-auto p-4">
         <DashboardActions 
           searchQuery={searchQuery}
           onSearchChange={e => setSearchQuery(e.target.value)}

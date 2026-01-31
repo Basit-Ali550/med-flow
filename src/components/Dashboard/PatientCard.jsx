@@ -60,7 +60,7 @@ export const PatientCard = ({
       )}
     >
       <div className="flex items-start gap-3">
-        <div className="mt-1 text-gray-300 group-hover:text-teal-500 transition-colors">
+        <div className="mt-1 sm:block hidden text-gray-300 group-hover:text-teal-500 transition-colors">
           <span className="font-semibold text-gray-900 shrink-0">=</span>
         </div>
 
