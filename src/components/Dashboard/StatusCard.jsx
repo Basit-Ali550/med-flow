@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Card } from "@/components/ui/card";
-import { Clock, Stethoscope, AlertTriangle } from "lucide-react";
+import { Clock, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function StatusCard({
@@ -30,7 +30,7 @@ export function StatusCard({
         iconColor: "text-white",
         badgeBg: "bg-teal-50",
         badgeColor: "text-teal-700",
-        borderColor: "border-gray-200", // Kept neutral/white as requested
+        borderColor: "border-gray-200",
       };
 
   const Icon = config.icon;
@@ -43,7 +43,6 @@ export function StatusCard({
       )}
     >
       <div className="flex items-center gap-4 flex-1 min-w-0">
-        {/* Icon Box */}
         <div
           className={cn(
             "w-10 h-10 rounded-lg flex items-center justify-center shadow-sm shrink-0",
@@ -54,7 +53,6 @@ export function StatusCard({
           <Icon className="w-5 h-5" />
         </div>
 
-        {/* Text Content */}
         <div className="min-w-0">
           <h2 className="font-bold text-gray-900 capitalize text-base truncate">
             {title}

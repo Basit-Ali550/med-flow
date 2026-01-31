@@ -58,9 +58,6 @@ export async function PUT(request, { params }) {
       throw new AppError('Patient not found', 404);
     }
     
-    console.log("Updating Patient:", id);
-    console.log("Update Payload:", body);
-
     // Prepare update data
     const updateData = { ...body };
     
