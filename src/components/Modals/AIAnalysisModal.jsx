@@ -37,18 +37,27 @@ export function AIAnalysisModal({
         You are an expert Triage Nurse Assistant. Analyze the following patient data and provide a triage assessment.
         
         Patient Data:
+        Patient Data:
+        - Name: ${patient.fullName || "Unknown"}
         - Age: ${patient.age || "Unknown"}
         - Gender: ${patient.gender || "Unknown"}
         - Symptoms: ${patient.symptoms}
         - Pain Level: ${patient.painLevel}/10
         - Vitals: ${patient.vitalSigns ? JSON.stringify(patient.vitalSigns) : "Not provided"}
-        - Medical History: ${patient.medicalHistory || "None"}
+        - Chronic Conditions: ${patient.chronicConditions || "None"}
+        - Medications: ${patient.medications || "None"}
+        - Allergies: ${patient.allergies || "None"}
+        - Lifestyle Habits:
+            - Smokes: ${patient.smokes || "No"}
+            - Alcohol: ${patient.consumesAlcohol || "No"}
+            - Other Drugs: ${patient.takesOtherDrugs || "No"} ${patient.takesOtherDrugs === "Yes" ? `(${patient.otherDrugsDetails})` : ""}
+        - Previous Medical History: ${patient.medicalHistory || "See Chronic Conditions"}
         
         Return a VALID JSON object with the following fields:
         1. "score": A number between 0-100 indicating urgency (100 = Critical/Immediate).
         2. "triageLevel": One of ["Critical", "Urgent", "Semi-Urgent", "Non-Urgent"].
-        3. "reasoning": A concise, professional clinical explanation (3-4 sentences) justifying the score.
-        4. "recommendedActions": An array of 3-5 specific, short clinical actions (e.g., "Administer 500mg Paracetamol", "Order ECG", "Monitor BP every 15m").
+        3. "reasoning": A concise, professional clinical explanation (3-6 sentences) justifying the score. You MUST facilitate the patient by Name (${patient.fullName}) and explicitly mention how their specific lifestyle factors (e.g., Smoking, Alcohol) or chronic conditions impact this specific case.
+        4. "recommendedActions": An array of 3-8 specific, short clinical actions (e.g., "Administer 500mg Paracetamol", "Order ECG", "Monitor BP every 15m").
         
         Respond ONLY with the JSON. Do not include markdown formatting.
       `;
@@ -110,7 +119,6 @@ export function AIAnalysisModal({
 
       setAnalysis(result);
 
-      // Auto-save: Persist to DB immediately
       if (onAnalysisComplete) {
         onAnalysisComplete({
           ...patient,
