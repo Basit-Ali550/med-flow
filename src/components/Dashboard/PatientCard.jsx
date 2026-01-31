@@ -13,11 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  GripHorizontal,
   Pencil,
   Trash2,
-  CheckCircle,
-  AlertCircle,
   History,
   Activity,
   Pin,
@@ -51,8 +48,6 @@ export const PatientCard = ({
     return () => clearInterval(interval);
   }, [patient.registeredAt]);
 
-  const hasVitals =
-    patient.vitalSigns && Object.keys(patient.vitalSigns).length > 0;
   const isHighPain = (patient.painLevel || 0) > 6;
 
   return (
@@ -110,29 +105,23 @@ export const PatientCard = ({
                 </button>
               )}
 
-              <Badge
-                variant="outline"
-                className={cn(
-                  "text-[10px] px-2 py-0.5 font-medium flex gap-1 items-center whitespace-nowrap",
-                  hasVitals
-                    ? "bg-teal-50 text-teal-600 border-teal-200"
-                    : "bg-red-50 text-red-500 border-red-200",
-                )}
-              >
-                {hasVitals ? (
-                  <>
-                    <CheckCircle className="w-3 h-3" /> Vitals
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="w-3 h-3" /> No Vitals
-                  </>
-                )}
-              </Badge>
+              {/* AI Score (Top Right for Scheduled/Triaged) */}
+              {patient.aiAnalysis && patient.status !== "Waiting" && (
+                <div
+                  className={cn(
+                    "text-xs font-bold px-2 py-0.5 rounded-md border",
+                    (patient.aiAnalysis.score ?? 0) > 50
+                      ? "bg-[#FFF0F2] border-[#F0000F] text-[#F0000F]"
+                      : "bg-[#FFF9BC] border-[#FFE33A] text-[#d4b106]",
+                  )}
+                >
+                  AI: <span>{patient.aiAnalysis.score ?? "--"}/100</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Priority & AI Analysis Section */}
+          {/* Priority Section */}
           <div className="flex justify-between items-start mb-3 min-h-[28px]">
             {/* Triage Level - Editable Dropdown (Only Visible for Scheduled/Triaged) */}
             <div
@@ -179,20 +168,6 @@ export const PatientCard = ({
                 )
               )}
             </div>
-
-            {/* AI Score (Only for Scheduled/Analysis) */}
-            {patient.aiAnalysis && patient.status !== "Waiting" && (
-              <div
-                className={cn(
-                  "text-xs font-bold p-1 rounded-md border ml-auto",
-                  (patient.aiAnalysis.score ?? 0) > 50
-                    ? "bg-[#FFF0F2] border-[#F0000F] text-[#F0000F]"
-                    : "bg-[#FFF9BC] border-[#FFE33A] text-[#d4b106]",
-                )}
-              >
-                Ai Score: <span>{patient.aiAnalysis.score ?? "--"} /100</span>
-              </div>
-            )}
           </div>
 
           {/* Symptoms */}
