@@ -39,6 +39,14 @@ export const PatientCard = ({
   );
   const ageDisplay = calculateAge(patient.dateOfBirth);
 
+  // Check if patient has vitals
+  const hasVitals =
+    patient.vitalSigns &&
+    (patient.vitalSigns.heartRate ||
+      patient.vitalSigns.bloodPressureSys ||
+      patient.vitalSigns.temperature ||
+      patient.vitalSigns.o2Saturation);
+
   useEffect(() => {
     // Update wait time every minute
     const interval = setInterval(() => {
@@ -47,8 +55,6 @@ export const PatientCard = ({
 
     return () => clearInterval(interval);
   }, [patient.registeredAt]);
-
-  const isHighPain = (patient.painLevel || 0) > 6;
 
   return (
     <Card
@@ -70,7 +76,7 @@ export const PatientCard = ({
         {/* Content */}
         <div className="flex-1 min-w-0">
           {/* Header */}
-          <div className="flex justify-between items-start mb-4 relative">
+          <div className="flex justify-between items-start mb-2 relative">
             <div>
               <h3 className="font-bold text-gray-900 text-base truncate pr-6">
                 {patient.fullName}
@@ -110,9 +116,11 @@ export const PatientCard = ({
                 <div
                   className={cn(
                     "text-xs font-bold px-2 py-0.5 rounded-md border",
-                    (patient.aiAnalysis.score ?? 0) > 50
-                      ? "bg-[#FFF0F2] border-[#F0000F] text-[#F0000F]"
-                      : "bg-[#FFF9BC] border-[#FFE33A] text-[#d4b106]",
+                    (patient.aiAnalysis.score ?? 0) <= 39
+                      ? "bg-green-50 border-green-300 text-green-700"
+                      : (patient.aiAnalysis.score ?? 0) <= 79
+                        ? "bg-yellow-50 border-yellow-300 text-yellow-700"
+                        : "bg-red-50 border-red-300 text-red-700",
                   )}
                 >
                   AI: <span>{patient.aiAnalysis.score ?? "--"}/100</span>
@@ -122,7 +130,7 @@ export const PatientCard = ({
           </div>
 
           {/* Priority Section */}
-          <div className="flex justify-between items-start mb-3 min-h-[28px]">
+          <div className="flex justify-between items-start mb-2 min-h-[28px]">
             {/* Triage Level - Editable Dropdown (Only Visible for Scheduled/Triaged) */}
             <div
               onClick={(e) => e.stopPropagation()}
@@ -177,6 +185,21 @@ export const PatientCard = ({
             </span>
             <span className="line-clamp-2 break-words">{patient.symptoms}</span>
           </div>
+
+          {/* Vitals Missing Badge - Only for unscheduled patients without vitals */}
+          {!hasVitals && patient.status === PATIENT_STATUS.WAITING && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onVitals?.(patient);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="mb-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-orange-50 text-orange-700 border border-orange-200 rounded-md text-xs font-medium hover:bg-orange-100 transition-colors cursor-pointer"
+            >
+              <Activity className="w-3.5 h-3.5" />
+              Vitals missing
+            </button>
+          )}
           {/* Footer Stats & Actions */}
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
@@ -184,9 +207,11 @@ export const PatientCard = ({
                 variant="secondary"
                 className={cn(
                   "border-transparent rounded px-2",
-                  isHighPain
-                    ? "bg-red-100 text-red-700"
-                    : "bg-teal-50 text-teal-700",
+                  (patient.painLevel || 0) <= 4
+                    ? "bg-green-50 text-green-700"
+                    : (patient.painLevel || 0) <= 7
+                      ? "bg-yellow-50 text-yellow-700"
+                      : "bg-red-50 text-red-700",
                 )}
               >
                 Pain: {patient.painLevel}/10

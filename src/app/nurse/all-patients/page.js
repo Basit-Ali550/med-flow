@@ -23,7 +23,7 @@ export default function AllPatientsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen">
       <Header title="Treatment Room" subtitle="Patients currently under active care" />
       
       <main className="max-w-7xl mx-auto p-6">

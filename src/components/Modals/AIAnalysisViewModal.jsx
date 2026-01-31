@@ -4,6 +4,7 @@ import React from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   X,
   Stethoscope,
@@ -60,17 +61,37 @@ export function AIAnalysisViewModal({ isOpen, onClose, patient }) {
               </div>
             </div>
 
-            <div className="flex items-center gap-4 bg-indigo-50 px-5 py-3 rounded-xl border border-indigo-100">
+            <div
+              className={cn(
+                "flex items-center gap-4 px-5 py-3 rounded-xl border",
+                (score ?? 0) <= 39
+                  ? "bg-green-50 border-green-200"
+                  : (score ?? 0) <= 79
+                    ? "bg-yellow-50 border-yellow-200"
+                    : "bg-red-50 border-red-200",
+              )}
+            >
               <div className="text-right">
                 <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
                   Urgency Score
                 </div>
-                <div className="text-lg font-bold text-[#0D9488]">
+                <div className="text-lg font-bold text-gray-700">
                   {triageLevel}
                 </div>
               </div>
-              <div className="h-8 w-px bg-indigo-200"></div>
-              <div className="text-4xl font-black text-[#0D9488]">{score}</div>
+              <div className="h-8 w-px bg-gray-200"></div>
+              <div
+                className={cn(
+                  "text-4xl font-black",
+                  (score ?? 0) <= 39
+                    ? "text-green-600"
+                    : (score ?? 0) <= 79
+                      ? "text-yellow-600"
+                      : "text-red-600",
+                )}
+              >
+                {score}
+              </div>
             </div>
           </div>
 
@@ -127,7 +148,7 @@ export function AIAnalysisViewModal({ isOpen, onClose, patient }) {
           <div className="mt-8 flex justify-end">
             <Button
               onClick={onClose}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold border border-gray-200 shadow-sm"
+              className="bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-full px-6 shadow-lg cursor-pointer"
             >
               Close Record
             </Button>

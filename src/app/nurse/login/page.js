@@ -11,6 +11,7 @@ import { authApi, isAuthenticated } from "@/lib/api";
 import { handleClientError } from "@/lib/error-handler";
 import Image from "next/image";
 import Login from "@/assets/Icon/Login.svg"
+import { Card } from "@/components";
 export default function NurseLogin() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -70,9 +71,12 @@ export default function NurseLogin() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-5">
-      {/* Login Icon */}
-     <Image src={Login} alt="Logo" width={100} height={100} />
+    
+ <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <Card className="max-w-md w-full p-8 shadow-xl bg-white rounded-3xl border-0">
+   <div className="flex justify-center">
+      <Image src={Login} alt="Logo" width={100} height={100} />
+   </div>
 
       {/* Login Form */}
       <form className="w-full max-w-xl" onSubmit={handleSubmit}>
@@ -127,6 +131,7 @@ export default function NurseLogin() {
           </Button>
         </div>
       </form>
+    </Card>
     </div>
   );
 }

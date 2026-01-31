@@ -39,7 +39,7 @@ export function Header({ title, subtitle, showMenu = true, className = "" }) {
       localStorage.removeItem("token");
       localStorage.removeItem("nurse");
       toast.success("Logged out successfully");
-      router.push("/nurse/login");
+      router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
       toast.error("Logout failed");

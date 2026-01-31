@@ -113,6 +113,28 @@ const patientSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Lifestyle Information
+    smokes: {
+      type: String,
+      enum: ['Yes', 'No', ''],
+      default: '',
+    },
+    consumesAlcohol: {
+      type: String,
+      enum: ['Yes', 'No', ''],
+      default: '',
+    },
+    takesOtherDrugs: {
+      type: String,
+      enum: ['Yes', 'No', ''],
+      default: '',
+    },
+    otherDrugsDetails: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+
     // Vital Signs
     vitalSigns: vitalSignsSchema,
 

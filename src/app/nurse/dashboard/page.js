@@ -390,8 +390,6 @@ export default function NurseDashboard() {
 
   return (
     <div className="min-h-screen">
-      
-      {/* --- Unified Modals Section --- */}
       <DeleteModal 
         isOpen={activeModal.type === 'DELETE'}
         onClose={closeModal}
@@ -432,18 +430,13 @@ export default function NurseDashboard() {
         onClose={closeModal}
         patient={activeModal.patient}
       />
-
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto p-6">
-        
-        {/* Actions Bar */}
+
         <DashboardActions 
           searchQuery={searchQuery}
           onSearchChange={e => setSearchQuery(e.target.value)}
           onAddClick={handleAddPatient}
         />
-
-        {/* DnD Context */}
         <DndContext 
           sensors={sensors} 
           collisionDetection={rectIntersection} 

@@ -18,6 +18,7 @@ import {
   User,
   Calendar,
   Fingerprint,
+  Activity,
 } from "lucide-react";
 import { calculateAge } from "@/lib/utils";
 
@@ -91,6 +92,80 @@ export function PatientHistoryModal({ isOpen, onClose, patient }) {
               emptyMessage="No known clinical allergies."
               isRed={!!patient.allergies}
             />
+
+            {/* Lifestyle Habits */}
+            {/* Lifestyle Habits - Enhanced Display */}
+            <Card className="p-5 border-none shadow-sm ring-1 ring-gray-200 bg-white">
+              <div className="flex items-start gap-4">
+                <div className="p-2 rounded-lg bg-amber-50">
+                  <Activity className="text-amber-600" size={16} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-sm text-gray-900">
+                    Lifestyle Habits
+                  </h4>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-3 mt-0.5">
+                    Smoking, Alcohol, Substances
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="flex flex-col p-2.5 rounded-md bg-gray-50 border border-gray-100">
+                      <span className="text-xs text-gray-500 font-medium mb-1">
+                        Smoking
+                      </span>
+                      <span
+                        className={`font-semibold text-sm ${
+                          patient.smokes === "Yes"
+                            ? "text-rose-600"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {patient.smokes || "Not recorded"}
+                      </span>
+                    </div>
+                    <div className="flex flex-col p-2.5 rounded-md bg-gray-50 border border-gray-100">
+                      <span className="text-xs text-gray-500 font-medium mb-1">
+                        Alcohol
+                      </span>
+                      <span
+                        className={`font-semibold text-sm ${
+                          patient.consumesAlcohol === "Yes"
+                            ? "text-amber-600"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {patient.consumesAlcohol || "Not recorded"}
+                      </span>
+                    </div>
+                    <div className="flex flex-col p-2.5 rounded-md bg-gray-50 border border-gray-100">
+                      <span className="text-xs text-gray-500 font-medium mb-1">
+                        Other Drugs
+                      </span>
+                      <div className="flex flex-col">
+                        <span
+                          className={`font-semibold text-sm ${
+                            patient.takesOtherDrugs === "Yes"
+                              ? "text-purple-600"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {patient.takesOtherDrugs || "Not recorded"}
+                        </span>
+                        {patient.takesOtherDrugs === "Yes" &&
+                          patient.otherDrugsDetails && (
+                            <span
+                              className="text-xs text-gray-500 mt-1 italic line-clamp-2"
+                              title={patient.otherDrugsDetails}
+                            >
+                              {patient.otherDrugsDetails}
+                            </span>
+                          )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
           </div>
         </div>
 

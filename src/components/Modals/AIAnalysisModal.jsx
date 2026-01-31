@@ -4,13 +4,13 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   X,
   BrainCircuit,
   CheckCircle2,
   Stethoscope,
   Activity,
-  ClipboardList,
 } from "lucide-react";
 
 export function AIAnalysisModal({
@@ -212,7 +212,7 @@ export function AIAnalysisModal({
           ) : (
             <div className="flex flex-col md:flex-row h-full min-h-[500px]">
               {/* LEFT COLUMN: Patient Context (40%) */}
-              <div className="md:w-[35%] bg-gray-50 border-r border-gray-100 p-6 flex flex-col gap-6">
+              <div className="md:w-[35%] bg-gray-50 border-r border-gray-100 p-6 flex flex-col gap-4">
                 {/* Identity */}
                 <div className="space-y-3">
                   <div className="w-16 h-16 rounded-2xl bg-white border border-gray-200 shadow-sm flex items-center justify-center mb-2">
@@ -227,33 +227,39 @@ export function AIAnalysisModal({
                     <p className="text-sm text-gray-500 font-medium mt-1">
                       {patient.age || "N/A"} Years • {patient.gender}
                     </p>
+                    {/* Pain & Wait - Below Age/Gender */}
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "border",
+                          (patient.painLevel || 0) <= 4
+                            ? "bg-green-50 text-green-700 border-green-200"
+                            : (patient.painLevel || 0) <= 7
+                              ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                              : "bg-red-50 text-red-700 border-red-200",
+                        )}
+                      >
+                        Pain: {patient.painLevel}/10
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className="bg-white text-gray-600 border-gray-200"
+                      >
+                        Wait: {patient.waitTime || 0}m
+                      </Badge>
+                    </div>
                   </div>
                 </div>
 
-                {/* Complaint */}
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                {/* Symptoms Section */}
+                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mt-auto">
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                    Chief Complaint
+                    Symptoms
                   </h4>
-                  <p className="text-gray-800 text-sm font-medium leading-relaxed italic">
-                    &quot;{patient.symptoms}&quot;
+                  <p className="text-gray-800 text-sm font-medium leading-relaxed">
+                    {patient.symptoms}
                   </p>
-                </div>
-
-                {/* Context Stats */}
-                <div className="flex flex-wrap gap-2 mt-auto">
-                  <Badge
-                    variant="outline"
-                    className="bg-white text-gray-600 border-gray-200"
-                  >
-                    Pain: {patient.painLevel}/10
-                  </Badge>
-                  <Badge
-                    variant="outline"
-                    className="bg-white text-gray-600 border-gray-200"
-                  >
-                    Wait: {patient.waitTime || 0}m
-                  </Badge>
                 </div>
               </div>
 
@@ -273,7 +279,16 @@ export function AIAnalysisModal({
 
                   <div className="text-right">
                     <div className="flex items-center justify-end gap-3 mb-1">
-                      <span className="text-3xl font-black text-teal-700">
+                      <span
+                        className={cn(
+                          "text-3xl font-black",
+                          (analysis.score ?? 0) <= 39
+                            ? "text-green-600"
+                            : (analysis.score ?? 0) <= 79
+                              ? "text-yellow-600"
+                              : "text-red-600",
+                        )}
+                      >
                         {analysis.score}
                       </span>
                       <div className="h-8 w-[2px] bg-gray-200"></div>
@@ -381,7 +396,7 @@ export function AIAnalysisModal({
                       }
                       onClose();
                     }}
-                    className="bg-gray-900 hover:bg-black text-white rounded-full px-6 py-2 h-10 text-sm font-bold shadow-lg transition-all cursor-pointer pointer-events-auto"
+                    className="bg-teal-600 hover:bg-teal-700 text-white rounded-full px-6 py-2 h-10 text-sm font-bold shadow-lg transition-all cursor-pointer pointer-events-auto"
                   >
                     Acknowledge Assessment
                   </Button>
