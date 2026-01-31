@@ -49,7 +49,7 @@ export default function Home() {
             </div>
             <div className="flex-1 text-left">
               <h3 className="font-bold text-[#0f172a]">Patient</h3>
-              <p className="text-xs text-[#64748b]">I am here to register for Patient</p>
+              <p className="text-xs text-[#64748b]">I am here to register for patient</p>
             </div>
             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center
               ${selectedRole === "patient" ? "border-[#10b981]" : "border-gray-300"}`}>

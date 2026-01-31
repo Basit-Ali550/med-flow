@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {  Loader2, Eye, EyeOff } from "lucide-react";
+import {  Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { authApi, isAuthenticated } from "@/lib/api";
 import { handleClientError } from "@/lib/error-handler";
 import Image from "next/image";
@@ -73,7 +73,15 @@ export default function NurseLogin() {
   return (
     
  <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      <Card className="max-w-md w-full p-8 shadow-xl bg-white rounded-3xl border-0">
+      <Card className="max-w-md w-full p-8 shadow-xl bg-white rounded-3xl border-0 relative">
+        <button 
+          onClick={() => router.back()} 
+          className="absolute top-6 left-6 flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-all cursor-pointer group"
+          aria-label="Go back"
+        >
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+          <span>Back</span>
+        </button>
    <div className="flex justify-center">
       <Image src={Login} alt="Logo" width={100} height={100} />
    </div>

@@ -13,8 +13,7 @@ import {
   Clipboard,
   Heart,
   Check as CheckIcon,
-  HeartOff,
-  CigaretteOff,
+  HeartHandshake,
 } from "lucide-react";
 
 // Base Schema used for both
@@ -169,10 +168,8 @@ export default function PatientForm({
     ...(showVitalSigns ? vitalSignsSchema : {}),
   });
 
-  // No conversion needed, native Fahrenheit
   const formInitialValues = initialValues;
 
-  // Handle Submit
   const handleFormSubmit = (values, actions) => {
     onSubmit(values, actions);
   };
@@ -444,7 +441,7 @@ export default function PatientForm({
           {/* Lifestyle Habits - Moved to Bottom */}
           <div className="flex items-center border-b pb-2 gap-2.5 my-8">
             <span className="bg-[#EFFDFA] p-2 rounded-full">
-              <CigaretteOff className="w-5 h-5 text-teal-600" />
+              <HeartHandshake className="w-5 h-5 text-teal-600" />
             </span>
             <h2 className="text-xl font-semibold text-gray-900">Habits</h2>
           </div>
@@ -472,8 +469,6 @@ export default function PatientForm({
                 Do you smoke?
               </Label>
             </div>
-
-            {/* Alcohol */}
             <div
               className={`flex items-center gap-3`}
               onClick={() =>

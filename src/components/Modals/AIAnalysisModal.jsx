@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, calculateAge } from "@/lib/utils";
 import {
   X,
   BrainCircuit,
@@ -18,6 +18,7 @@ export function AIAnalysisModal({
   onClose,
   patient,
   onAnalysisComplete,
+  forceAnalysis = false, // New prop
 }) {
   const [loading, setLoading] = useState(true);
   const [analysis, setAnalysis] = useState(null);
@@ -32,23 +33,33 @@ export function AIAnalysisModal({
       return;
     }
 
+    setLoading(true); // Ensure loading state is set when generating
+
     try {
       const prompt = `
         You are an expert Triage Nurse Assistant. Analyze the following patient data and provide a triage assessment.
         
         Patient Data:
-        - Age: ${patient.age || "Unknown"}
+        - Name: ${patient.fullName || "Unknown"}
+        - Age: ${patient.age || calculateAge(patient.dateOfBirth) || "Unknown"}
         - Gender: ${patient.gender || "Unknown"}
         - Symptoms: ${patient.symptoms}
         - Pain Level: ${patient.painLevel}/10
         - Vitals: ${patient.vitalSigns ? JSON.stringify(patient.vitalSigns) : "Not provided"}
-        - Medical History: ${patient.medicalHistory || "None"}
+        - Chronic Conditions: ${patient.chronicConditions || "None"}
+        - Medications: ${patient.medications || "None"}
+        - Allergies: ${patient.allergies || "None"}
+        - Lifestyle Habits:
+            - Smokes: ${patient.smokes || "No"}
+            - Alcohol: ${patient.consumesAlcohol || "No"}
+            - Other Drugs: ${patient.takesOtherDrugs || "No"} ${patient.takesOtherDrugs === "Yes" ? `(${patient.otherDrugsDetails})` : ""}
+        - Previous Medical History: ${patient.medicalHistory || "See Chronic Conditions"}
         
         Return a VALID JSON object with the following fields:
         1. "score": A number between 0-100 indicating urgency (100 = Critical/Immediate).
         2. "triageLevel": One of ["Critical", "Urgent", "Semi-Urgent", "Non-Urgent"].
-        3. "reasoning": A concise, professional clinical explanation (3-4 sentences) justifying the score.
-        4. "recommendedActions": An array of 3-5 specific, short clinical actions (e.g., "Administer 500mg Paracetamol", "Order ECG", "Monitor BP every 15m").
+        3. "reasoning": A concise, professional clinical explanation (3-6 sentences) justifying the score. You MUST facilitate the patient by Name (${patient.fullName}) and explicitly mention how their specific lifestyle factors (e.g., Smoking, Alcohol) or chronic conditions impact this specific case.
+        4. "recommendedActions": An array of 3-8 specific, short clinical actions (e.g., "Administer 500mg Paracetamol", "Order ECG", "Monitor BP every 15m").
         
         Respond ONLY with the JSON. Do not include markdown formatting.
       `;
@@ -110,7 +121,6 @@ export function AIAnalysisModal({
 
       setAnalysis(result);
 
-      // Auto-save: Persist to DB immediately
       if (onAnalysisComplete) {
         onAnalysisComplete({
           ...patient,
@@ -135,18 +145,28 @@ export function AIAnalysisModal({
 
   useEffect(() => {
     if (isOpen && patient) {
-      // Improved check: Use optional chaining and check against null/undefined explicitly
-      // to handle score = 0 cases.
-      // Force re-analysis every time the modal is opened
-      console.log("Starting new analysis...");
-      generateAnalysis();
+      if (forceAnalysis) {
+        console.log("Forcing new AI analysis...");
+        generateAnalysis();
+      } else if (
+        patient.aiAnalysis &&
+        (patient.aiAnalysis.score !== undefined || patient.aiAnalysis.reasoning)
+      ) {
+        console.log("Using existing AI analysis...");
+        setAnalysis(patient.aiAnalysis);
+        setLoading(false);
+        setError(null);
+      } else {
+        console.log("No existing analysis found, generating new...");
+        generateAnalysis();
+      }
     } else {
       // Reset state when closed
       setLoading(true);
       setAnalysis(null);
       setError(null);
     }
-  }, [isOpen, patient, generateAnalysis]);
+  }, [isOpen, patient, generateAnalysis, forceAnalysis]);
 
   if (!isOpen) return null;
 
@@ -220,7 +240,10 @@ export function AIAnalysisModal({
                       {patient.fullName}
                     </h3>
                     <p className="text-sm text-gray-500 font-medium mt-1">
-                      {patient.age || "N/A"} Years • {patient.gender}
+                      {patient.age ||
+                        calculateAge(patient.dateOfBirth) ||
+                        "N/A"}{" "}
+                      Years • {patient.gender}
                     </p>
                     {/* Pain & Wait - Below Age/Gender */}
                     <div className="flex flex-wrap gap-2 mt-3">
@@ -286,15 +309,6 @@ export function AIAnalysisModal({
                       >
                         {analysis.score}
                       </span>
-                      <div className="h-8 w-[2px] bg-gray-200"></div>
-                      <div className="text-right">
-                        <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                          Urgency
-                        </div>
-                        <div className="text-sm font-bold text-teal-600">
-                          {analysis.triageLevel}
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>

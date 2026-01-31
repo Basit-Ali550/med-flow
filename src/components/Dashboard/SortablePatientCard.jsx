@@ -13,8 +13,9 @@ export function SortablePatientCard({
   onVitals,
   onClick,
   onPin,
-  onAIAnalysis, // New prop
-  onTreatment, // New prop
+  onAIAnalysis,
+  onReAnalyze, // New prop
+  onTreatment,
 }) {
   const {
     attributes,
@@ -43,6 +44,7 @@ export function SortablePatientCard({
         onClick={(p) => onClick?.(p)}
         onPin={onPin ? (p) => onPin(p) : undefined}
         onAIAnalysis={onAIAnalysis ? (p) => onAIAnalysis(p) : undefined}
+        onReAnalyze={onReAnalyze ? (p) => onReAnalyze(p) : undefined} // Passed down
         onTreatment={onTreatment ? (p) => onTreatment(p) : undefined}
         dragHandleProps={{ ...attributes, ...listeners }}
       />

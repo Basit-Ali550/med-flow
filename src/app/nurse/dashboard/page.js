@@ -286,7 +286,7 @@ export default function NurseDashboard() {
     }
   };
 
-  const handleCardClick = (patient) => {
+  const handleTreatmentClick = (patient) => {
     // Only open for Scheduled/Triaged patients
     if (patient.status === PATIENT_STATUS.TRIAGED) {
       openModal('TREATMENT', patient);
@@ -409,6 +409,7 @@ export default function NurseDashboard() {
         onClose={closeModal}
         patient={activeModal.patient}
         onAnalysisComplete={handleAnalysisComplete}
+        forceAnalysis={activeModal.meta?.forceAnalysis} // Use meta to toggle force run
       />
 
   
@@ -451,7 +452,7 @@ export default function NurseDashboard() {
             <div className="flex flex-col gap-8">
               <StatusCard 
                 title="unscheduled" 
-                subtitle="Waiting list" 
+                subtitle="Awaiting triage assessment" 
                 count={filteredUnscheduled.length} 
               />
 
@@ -483,8 +484,9 @@ export default function NurseDashboard() {
             <div className="flex flex-col gap-8">
                <StatusCard 
                  title="scheduled" 
-                 subtitle="triaged list" 
+                 subtitle="AI-prioritized • Drag to reorder" 
                  count={filteredScheduled.length} 
+                 criticalCount={filteredScheduled.filter(p => (p.aiAnalysis?.score || 0) >= 80 || p.triageLevel === 'Critical').length}
                />
 
               {/* Droppable Area */}
@@ -501,13 +503,16 @@ export default function NurseDashboard() {
                         patient={patient} 
                         onEdit={handleEdit} 
                         onDelete={handleDeleteClick}
-                        onHistory={handleHistoryClick}
                         onVitals={handleVitalsClick}
-                        onClick={handleCardClick}
+                        onClick={handleHistoryClick} // Card click opens History
                         onPin={handlePin}
-                        onTreatment={handleCardClick} // Pass treatment handler
+                        onTreatment={handleTreatmentClick} // Treatment button opens Treatment
+                        onReAnalyze={(patient) => {
+                          // Force Re-Run
+                          openModal('AI', patient, { forceAnalysis: true });
+                        }}
                         onAIAnalysis={(patient) => {
-                          // Always open AI generation modal to re-analyze
+                          // Just View (default behavior since no forceAnalysis passed)
                           openModal('AI', patient);
                         }}
                       />
