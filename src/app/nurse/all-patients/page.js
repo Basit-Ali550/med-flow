@@ -43,12 +43,6 @@ export default function AllPatientsPage() {
               <PatientCard 
                 key={patient._id} 
                 patient={patient}
-                // Pass handlers to enable interactivity or keep read-only? 
-                // User said "show krwao" but reusing card implies some interaction.
-                // We'll provide navigation handlers for consistency.
-                onEdit={() => router.push(`/nurse/edit-patient/${patient._id}`)}
-                onClick={() => router.push(`/nurse/edit-patient/${patient._id}`)} // Or maybe no click action?
-                // Minimal props for now as requested "show"
               />
             ))}
             {filteredItems.length === 0 && (

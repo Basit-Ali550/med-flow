@@ -505,6 +505,7 @@ export default function NurseDashboard() {
                         onVitals={handleVitalsClick}
                         onClick={handleCardClick}
                         onPin={handlePin}
+                        onTreatment={handleCardClick} // Pass treatment handler
                         onAIAnalysis={(patient) => {
                           // Always open AI generation modal to re-analyze
                           openModal('AI', patient);

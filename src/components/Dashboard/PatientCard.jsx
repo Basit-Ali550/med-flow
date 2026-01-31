@@ -5,8 +5,15 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn, calculateAge, formatWaitTime } from "@/lib/utils";
 import { PATIENT_STATUS } from "@/lib/constants";
-
-import { Pencil, Trash2, History, Activity, Pin } from "lucide-react";
+import { SquareArrowOutUpRight } from "lucide-react";
+import {
+  Pencil,
+  Trash2,
+  History,
+  Activity,
+  Pin,
+  Stethoscope,
+} from "lucide-react";
 
 export const PatientCard = ({
   patient,
@@ -19,6 +26,7 @@ export const PatientCard = ({
   isOverlay,
   onPin,
   onAIAnalysis, // New prop
+  onTreatment, // New prop
 }) => {
   const [waitTimeDisplay, setWaitTimeDisplay] = useState(
     formatWaitTime(patient.registeredAt),
@@ -161,42 +169,61 @@ export const PatientCard = ({
             </div>
 
             <div className="flex gap-1 relative z-10">
-              <ActionButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onHistory?.(patient);
-                }}
-                icon={<History className="w-4 h-4" />}
-                className="hover:text-blue-600"
-                title="Medical History"
-              />
-              <ActionButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onVitals?.(patient);
-                }}
-                icon={<Activity className="w-4 h-4" />}
-                className="hover:text-orange-600"
-                title="Update Vitals"
-              />
-              <ActionButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit?.(patient);
-                }}
-                icon={<Pencil className="w-4 h-4" />}
-                className="hover:text-teal-600"
-                title="Edit Details"
-              />
-              <ActionButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete?.(patient);
-                }}
-                icon={<Trash2 className="w-4 h-4" />}
-                className="hover:text-red-600"
-                title="Delete"
-              />
+              {onHistory && (
+                <ActionButton
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onHistory?.(patient);
+                  }}
+                  icon={<History className="w-4 h-4" />}
+                  className="hover:text-blue-600"
+                  title="Medical History"
+                />
+              )}
+              {onVitals && (
+                <ActionButton
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onVitals?.(patient);
+                  }}
+                  icon={<Activity className="w-4 h-4" />}
+                  className="hover:text-orange-600"
+                  title="Update Vitals"
+                />
+              )}
+              {onEdit && (
+                <ActionButton
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit?.(patient);
+                  }}
+                  icon={<Pencil className="w-4 h-4" />}
+                  className="hover:text-teal-600"
+                  title="Edit Details"
+                />
+              )}
+              {onDelete && (
+                <ActionButton
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete?.(patient);
+                  }}
+                  icon={<Trash2 className="w-4 h-4" />}
+                  className="hover:text-red-600"
+                  title="Delete"
+                />
+              )}
+              {onTreatment && (
+                <ActionButton
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTreatment?.(patient);
+                  }}
+                  icon={<SquareArrowOutUpRight className="w-4 h-4" />}
+                  className="hover:text-purple-600"
+                  title="Send to Treatment"
+                />
+              )}
             </div>
           </div>
         </div>

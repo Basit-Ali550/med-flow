@@ -354,23 +354,17 @@ export default function PatientForm({
           )}
 
           {/* Lifestyle Habits - Moved to Bottom */}
-          <div className="flex items-center border-b pb-2 gap-2.5 my-5">
+          <div className="flex items-center border-b pb-2 gap-2.5 my-8">
             <span className="bg-[#EFFDFA] p-2 rounded-full">
               <Activity className="w-5 h-5 text-teal-600" />
             </span>
-            <h2 className="text-xl font-semibold text-gray-900">
-              Lifestyle Habits
-            </h2>
+            <h2 className="text-xl font-semibold text-gray-900">Habits</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {/* Smoking */}
             <div
-              className={`flex items-center gap-3 p-4 border rounded-xl transition-all cursor-pointer ${
-                values.smokes === "Yes"
-                  ? "bg-teal-50 border-teal-200"
-                  : "bg-white border-gray-200 hover:border-gray-300"
-              }`}
+              className={`flex items-center gap-3`}
               onClick={() =>
                 setFieldValue("smokes", values.smokes === "Yes" ? "No" : "Yes")
               }
@@ -393,11 +387,7 @@ export default function PatientForm({
 
             {/* Alcohol */}
             <div
-              className={`flex items-center gap-3 p-4 border rounded-xl transition-all cursor-pointer ${
-                values.consumesAlcohol === "Yes"
-                  ? "bg-teal-50 border-teal-200"
-                  : "bg-white border-gray-200 hover:border-gray-300"
-              }`}
+              className={`flex items-center gap-3`}
               onClick={() =>
                 setFieldValue(
                   "consumesAlcohol",
@@ -423,11 +413,7 @@ export default function PatientForm({
 
             {/* Other Drugs */}
             <div
-              className={`flex items-center gap-3 p-4 border rounded-xl transition-all cursor-pointer ${
-                values.takesOtherDrugs === "Yes"
-                  ? "bg-teal-50 border-teal-200"
-                  : "bg-white border-gray-200 hover:border-gray-300"
-              }`}
+              className={`flex items-center gap-3`}
               onClick={() =>
                 setFieldValue(
                   "takesOtherDrugs",
