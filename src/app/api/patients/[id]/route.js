@@ -75,11 +75,11 @@ export async function PUT(request, { params }) {
           
       updateData.vitalSigns = { ...currentVitals };
       
-      if (body.heartRate !== undefined) updateData.vitalSigns.heartRate = parseFloat(body.heartRate);
-      if (body.bloodPressureSys !== undefined) updateData.vitalSigns.bloodPressureSys = parseFloat(body.bloodPressureSys);
-      if (body.bloodPressureDia !== undefined) updateData.vitalSigns.bloodPressureDia = parseFloat(body.bloodPressureDia);
-      if (body.temperature !== undefined) updateData.vitalSigns.temperature = parseFloat(body.temperature);
-      if (body.o2Saturation !== undefined) updateData.vitalSigns.o2Saturation = parseFloat(body.o2Saturation);
+      if (body.heartRate !== undefined && body.heartRate !== "") updateData.vitalSigns.heartRate = parseFloat(body.heartRate);
+      if (body.bloodPressureSys !== undefined && body.bloodPressureSys !== "") updateData.vitalSigns.bloodPressureSys = parseFloat(body.bloodPressureSys);
+      if (body.bloodPressureDia !== undefined && body.bloodPressureDia !== "") updateData.vitalSigns.bloodPressureDia = parseFloat(body.bloodPressureDia);
+      if (body.temperature !== undefined && body.temperature !== "") updateData.vitalSigns.temperature = parseFloat(body.temperature);
+      if (body.o2Saturation !== undefined && body.o2Saturation !== "") updateData.vitalSigns.o2Saturation = parseFloat(body.o2Saturation);
       updateData.vitalSigns.recordedAt = new Date();
       
       // Remove individual vital fields from updateData

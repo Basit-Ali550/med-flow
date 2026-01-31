@@ -7,12 +7,22 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Activity, Clipboard, Heart } from "lucide-react";
+import {
+  User,
+  Activity,
+  Clipboard,
+  Heart,
+  Check as CheckIcon,
+} from "lucide-react";
 
 // Base Schema used for both
 const baseSchema = {
   fullName: Yup.string()
     .min(2, "Name must be at least 2 characters")
+    .matches(
+      /^[A-Za-z\s\-']+$/,
+      "Name can only contain letters, spaces, hyphens, and apostrophes",
+    )
     .required("Full name is required"),
   dateOfBirth: Yup.date()
     .max(
@@ -28,6 +38,20 @@ const baseSchema = {
   allergies: Yup.string(),
   medications: Yup.string(),
   chronicConditions: Yup.string(),
+  smokes: Yup.string().oneOf(["Yes", "No", ""], "Please select Yes or No"),
+  consumesAlcohol: Yup.string().oneOf(
+    ["Yes", "No", ""],
+    "Please select Yes or No",
+  ),
+  takesOtherDrugs: Yup.string().oneOf(
+    ["Yes", "No", ""],
+    "Please select Yes or No",
+  ),
+  otherDrugsDetails: Yup.string().when("takesOtherDrugs", {
+    is: "Yes",
+    then: () => Yup.string().required("Please specify the other drugs"),
+    otherwise: () => Yup.string(),
+  }),
 };
 
 // Vital Signs Schema
@@ -48,6 +72,10 @@ const defaultInitialValues = {
   allergies: "",
   medications: "",
   chronicConditions: "",
+  smokes: "",
+  consumesAlcohol: "",
+  takesOtherDrugs: "",
+  otherDrugsDetails: "",
   // Vitals
   heartRate: "",
   bloodPressureSys: "",
@@ -323,6 +351,113 @@ export default function PatientForm({
                 </div>
               </div>
             </Card>
+          )}
+
+          {/* Lifestyle Habits - Moved to Bottom */}
+          <div className="flex items-center border-b pb-2 gap-2.5 my-8">
+            <span className="bg-[#EFFDFA] p-2 rounded-full">
+              <Activity className="w-5 h-5 text-teal-600" />
+            </span>
+            <h2 className="text-xl font-semibold text-gray-900">Habits</h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6">
+            {/* Smoking */}
+            <div
+              className={`flex items-center gap-3`}
+              onClick={() =>
+                setFieldValue("smokes", values.smokes === "Yes" ? "No" : "Yes")
+              }
+            >
+              <div
+                className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                  values.smokes === "Yes"
+                    ? "bg-teal-600 border-teal-600"
+                    : "bg-white border-gray-300"
+                }`}
+              >
+                {values.smokes === "Yes" && (
+                  <CheckIcon className="w-3.5 h-3.5 text-white" />
+                )}
+              </div>
+              <Label className="cursor-pointer font-medium text-gray-700">
+                Do you smoke?
+              </Label>
+            </div>
+
+            {/* Alcohol */}
+            <div
+              className={`flex items-center gap-3`}
+              onClick={() =>
+                setFieldValue(
+                  "consumesAlcohol",
+                  values.consumesAlcohol === "Yes" ? "No" : "Yes",
+                )
+              }
+            >
+              <div
+                className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                  values.consumesAlcohol === "Yes"
+                    ? "bg-teal-600 border-teal-600"
+                    : "bg-white border-gray-300"
+                }`}
+              >
+                {values.consumesAlcohol === "Yes" && (
+                  <CheckIcon className="w-3.5 h-3.5 text-white" />
+                )}
+              </div>
+              <Label className="cursor-pointer font-medium text-gray-700">
+                Do you consume alcohol?
+              </Label>
+            </div>
+
+            {/* Other Drugs */}
+            <div
+              className={`flex items-center gap-3`}
+              onClick={() =>
+                setFieldValue(
+                  "takesOtherDrugs",
+                  values.takesOtherDrugs === "Yes" ? "No" : "Yes",
+                )
+              }
+            >
+              <div
+                className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                  values.takesOtherDrugs === "Yes"
+                    ? "bg-teal-600 border-teal-600"
+                    : "bg-white border-gray-300"
+                }`}
+              >
+                {values.takesOtherDrugs === "Yes" && (
+                  <CheckIcon className="w-3.5 h-3.5 text-white" />
+                )}
+              </div>
+              <Label className="cursor-pointer font-medium text-gray-700">
+                Do you take any other drugs?
+              </Label>
+            </div>
+          </div>
+
+          {/* Conditional Textbox for Other Drugs */}
+          {values.takesOtherDrugs === "Yes" && (
+            <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-200">
+              <Label htmlFor="otherDrugsDetails">
+                Please specify the other drugs *
+              </Label>
+              <Field
+                as="textarea"
+                id="otherDrugsDetails"
+                name="otherDrugsDetails"
+                placeholder="Enter details about other drugs..."
+                rows={3}
+                className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              />
+              <ErrorMessage
+                name="otherDrugsDetails"
+                component="p"
+                className="text-red-500 text-sm mt-1"
+              />
+            </div>
           )}
 
           {/* Footer Buttons */}

@@ -19,12 +19,11 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 
-import { Plus, Search, Loader2 } from "lucide-react";
+import {  Loader2 } from "lucide-react";
 
 // Custom Components
 import { DeleteModal } from "@/components/Modals/DeleteModal";
 import { AIAnalysisModal } from "@/components/Modals/AIAnalysisModal";
-import { AIAnalysisViewModal } from "@/components/Modals/AIAnalysisViewModal";
 import { TreatmentConfirmationModal } from "@/components/Modals/TreatmentConfirmationModal";
 import { UpdateVitalsModal } from "@/components/Modals/UpdateVitalsModal";
 import { PatientHistoryModal } from "@/components/Modals/PatientHistoryModal";
@@ -88,41 +87,41 @@ export default function NurseDashboard() {
 
   // --- Sorting Logic ---
   
-  // 1. Unscheduled List (Manual Order + Fallback to Newest)
+  // 1. Unscheduled List (Always sorted descending by registration time - newest first)
   const sortedUnscheduledItems = [...filteredUnscheduled].sort((a, b) => {
-      // Manual Order (Ascending)
-      const orderA = a.manualOrder ?? 0;
-      const orderB = b.manualOrder ?? 0;
-      if (Math.abs(orderA - orderB) > 0.00001) {
-          return orderA - orderB;
-      }
-      // Fallback: Registration Time (Desc/LIFO as per API default)
       return new Date(b.registeredAt) - new Date(a.registeredAt); 
   });
 
-  // 2. Scheduled List (Pinned > Manual > Score > Wait Time)
+  // 2. Scheduled List (Pinned first with manual order, then non-pinned descending by registration)
   const sortedScheduledItems = [...filteredScheduled].sort((a, b) => {
     // 1. Pinned items first
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
 
-    // 2. Manual Order (Ascending)
-    // Allows dragging patients to specific positions, overriding other sorts.
-    const orderA = a.manualOrder ?? 0;
-    const orderB = b.manualOrder ?? 0;
-    if (Math.abs(orderA - orderB) > 0.00001) {
-        return orderA - orderB;
+    if (a.isPinned && b.isPinned) {
+      const orderA = a.manualOrder ?? 0;
+      const orderB = b.manualOrder ?? 0;
+      if (Math.abs(orderA - orderB) > 0.00001) {
+          return orderA - orderB;
+      }
+      // Fallback for pinned: AI Score then FIFO
+      const scoreA = a.aiAnalysis?.score || 0;
+      const scoreB = b.aiAnalysis?.score || 0;
+      if (scoreA !== scoreB) {
+          return scoreB - scoreA;
+      }
+      return new Date(a.registeredAt) - new Date(b.registeredAt);
     }
 
-    // 3. High Urgency Score (if available)
+    // 3. Non-pinned patients: Sort by AI Score (Descending), then Registration (Descending)
     const scoreA = a.aiAnalysis?.score || 0;
     const scoreB = b.aiAnalysis?.score || 0;
+    
     if (scoreA !== scoreB) {
-        return scoreB - scoreA; // Descending order
+        return scoreB - scoreA; // Higher score first
     }
-
-    // 4. Fallback: Registration Time (FIFO)
-    return new Date(a.registeredAt) - new Date(b.registeredAt);
+    
+    return new Date(b.registeredAt) - new Date(a.registeredAt);
   });
 
   const activePatient = items.find(p => p._id === activeId);
@@ -160,8 +159,12 @@ export default function NurseDashboard() {
     else if (draggedItem.status !== PATIENT_STATUS.WAITING && isOverUnscheduled) {
        newStatus = PATIENT_STATUS.WAITING;
     }
-    // Logic 3: Reorder within Scheduled List
+    // Logic 3: Reorder within Scheduled List (ONLY for pinned patients)
     else if (draggedItem.status === PATIENT_STATUS.TRIAGED && isOverScheduled && active.id !== over.id) {
+       if (!draggedItem.isPinned) {
+           toast.info("Pin the patient first to enable manual ordering");
+           return;
+       }
        const oldIndex = sortedScheduledItems.findIndex(p => p._id === active.id);
        const newIndex = sortedScheduledItems.findIndex(p => p._id === over.id);
 
@@ -202,61 +205,19 @@ export default function NurseDashboard() {
        }
        return;
     }
-    // Logic 4: Reorder within Unscheduled List
+    // Logic 4: Reorder within Unscheduled List - DISABLED
+    // Unscheduled patients should always be sorted descending by registration time
     else if (draggedItem.status === PATIENT_STATUS.WAITING && isOverUnscheduled && active.id !== over.id) {
-       const oldIndex = sortedUnscheduledItems.findIndex(p => p._id === active.id);
-       const newIndex = sortedUnscheduledItems.findIndex(p => p._id === over.id);
-
-       if (oldIndex !== -1 && newIndex !== -1) {
-           const reorderedList = arrayMove(sortedUnscheduledItems, oldIndex, newIndex);
-           const movedItemIndex = reorderedList.findIndex(p => p._id === active.id);
-           
-           const prevItem = reorderedList[movedItemIndex - 1];
-           const nextItem = reorderedList[movedItemIndex + 1];
-
-           const lowerBound = prevItem ? (prevItem.manualOrder ?? 0) : null;
-           const upperBound = nextItem ? (nextItem.manualOrder ?? 0) : null;
-
-           let newOrder;
-           if (lowerBound !== null && upperBound !== null) {
-               newOrder = (lowerBound + upperBound) / 2;
-           } else if (lowerBound !== null) {
-               newOrder = lowerBound + 10000;
-           } else if (upperBound !== null) {
-               newOrder = upperBound - 10000;
-           } else {
-               newOrder = 0;
-           }
-
-           // Optimistic Update
-           setItems(prev => prev.map(p => 
-               p._id === patientId ? { ...p, manualOrder: newOrder } : p
-           ));
-
-           try {
-              await updatePatient(patientId, { manualOrder: newOrder });
-           } catch (err) {
-              setItems(previousItems);
-              toast.error("Failed to reorder");
-           }
-       }
+       // Reordering is disabled for unscheduled patients
        return;
     }
 
     // Apply Status Changes (Logic 1 & 2)
     if (newStatus && newStatus !== draggedItem.status) {
-      // Keep manualOrder roughly generic or reset? Keep it.
+      const waitTime = getWaitTimeMinutes(draggedItem.registeredAt);
       
-      // Optimistic Update
-      setItems(prev => prev.map(p => 
-        p._id === patientId ? { ...p, status: newStatus } : p
-      ));
-
-      // Trigger AI Modal
+      // Check Vitals First for moving to scheduled
       if (shouldTriggerAI) {
-        const waitTime = getWaitTimeMinutes(draggedItem.registeredAt);
-
-        // Check Vitals First
         const hasVitals = draggedItem.vitalSigns && (
             draggedItem.vitalSigns.heartRate || 
             draggedItem.vitalSigns.bloodPressureSys || 
@@ -264,19 +225,37 @@ export default function NurseDashboard() {
             draggedItem.vitalSigns.o2Saturation
         );
         
+        if (!hasVitals) {
+             // DON'T update status yet - wait for vitals to be saved
+             // Store pending move info in modal meta
+             openModal('VITALS', draggedItem, { 
+                 next: 'AI', 
+                 pendingMove: { 
+                     patientId, 
+                     newStatus, 
+                     previousItems 
+                 } 
+             });
+     
+             return;
+        }
+      }
+
+      // If we get here, either no vitals needed OR vitals exist
+      // Optimistic Update
+      setItems(prev => prev.map(p => 
+        p._id === patientId ? { ...p, status: newStatus } : p
+      ));
+
+      // Trigger AI Modal (only if vitals exist)
+      if (shouldTriggerAI) {
         const updatedItemForModal = { 
             ...draggedItem, 
             status: newStatus, 
             waitTime 
         };
-
-        if (!hasVitals) {
-             // Open Vitals Modal first, then chain AI
-             openModal('VITALS', updatedItemForModal, { next: 'AI' });
-        } else {
-             const hasAnalysis = draggedItem.aiAnalysis && draggedItem.aiAnalysis.score != null;
-             openModal(hasAnalysis ? 'AI_VIEW' : 'AI', updatedItemForModal);
-        }
+        // Always open AI generation modal
+        openModal('AI', updatedItemForModal);
       }
 
       // API Call
@@ -340,11 +319,30 @@ export default function NurseDashboard() {
   const handleHistoryClick = (patient) => openModal('HISTORY', patient);
   const handleVitalsClick = (patient) => openModal('VITALS', patient);
   
-  const handleVitalsUpdate = useCallback((updatedPatient) => {
+  const handleVitalsUpdate = useCallback(async (updatedPatient) => {
     setItems(prev => prev.map(p => p._id === updatedPatient._id ? updatedPatient : p));
     
+    // Check for pending move (patient was dragged to scheduled but needed vitals first)
+    if (activeModal.meta?.pendingMove) {
+        const { patientId, newStatus, previousItems } = activeModal.meta.pendingMove;
+        
+        // Now perform the status update
+        setItems(prev => prev.map(p => 
+            p._id === patientId ? { ...p, status: newStatus } : p
+        ));
+        
+        // API Call for status change
+        const success = await updatePatientStatus(patientId, newStatus);
+        if (success) {
+            toast.success('Moved to Scheduled');
+        } else {
+            setItems(previousItems);
+            toast.error('Failed to move patient');
+            return; // Don't proceed to AI modal if move failed
+        }
+    }
+    
     // Check for chained action (e.g. AI Analysis after Vitals)
-    // IMPORTANT: Consume the 'next' instruction immediately to prevent loops
     if (activeModal.meta?.next === 'AI') {
         // Clear the interaction meta so subsequent updates don't re-trigger this
         setActiveModal(prev => ({ ...prev, meta: null }));
@@ -353,13 +351,22 @@ export default function NurseDashboard() {
              openModal('AI', updatedPatient);
         }, 300); // 300ms for smooth modal transition
     }
-  }, [activeModal.meta, setItems]); // Dependency on meta is key
+  }, [activeModal.meta, setItems, updatePatientStatus]);
 
   const handleAnalysisComplete = useCallback(async (updatedPatient) => {
-     // 1. Update Local State immediately
-     setItems(prev => prev.map(p => p._id === updatedPatient._id ? updatedPatient : p));
+     // 1. Update Local State immediately - PRESERVE current status from state
+     // The modal patient may have stale status, so we merge AI data while keeping current status
+     setItems(prev => prev.map(p => {
+       if (p._id === updatedPatient._id) {
+         return {
+           ...updatedPatient,
+           status: p.status, // CRITICAL: Preserve the current status from state
+         };
+       }
+       return p;
+     }));
      
-     // 2. Persist to API
+     // 2. Persist to API (only AI-related fields, NOT status)
      try {
        await updatePatient(updatedPatient._id, {
            aiAnalysis: updatedPatient.aiAnalysis,
@@ -389,8 +396,6 @@ export default function NurseDashboard() {
 
   return (
     <div className="min-h-screen">
-      
-      {/* --- Unified Modals Section --- */}
       <DeleteModal 
         isOpen={activeModal.type === 'DELETE'}
         onClose={closeModal}
@@ -406,11 +411,7 @@ export default function NurseDashboard() {
         onAnalysisComplete={handleAnalysisComplete}
       />
 
-      <AIAnalysisViewModal 
-        isOpen={activeModal.type === 'AI_VIEW'}
-        onClose={closeModal}
-        patient={activeModal.patient}
-      />
+  
 
       <TreatmentConfirmationModal
         isOpen={activeModal.type === 'TREATMENT'}
@@ -431,18 +432,13 @@ export default function NurseDashboard() {
         onClose={closeModal}
         patient={activeModal.patient}
       />
-
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto p-6">
-        
-        {/* Actions Bar */}
+
         <DashboardActions 
           searchQuery={searchQuery}
           onSearchChange={e => setSearchQuery(e.target.value)}
           onAddClick={handleAddPatient}
         />
-
-        {/* DnD Context */}
         <DndContext 
           sensors={sensors} 
           collisionDetection={rectIntersection} 
@@ -472,20 +468,6 @@ export default function NurseDashboard() {
                       onDelete={handleDeleteClick}
                       onHistory={handleHistoryClick}
                       onVitals={handleVitalsClick}
-                      onTriageChange={async (patient, newLevel) => {
-                          setItems(prev => prev.map(p => p._id === patient._id ? { 
-                              ...p, 
-                              triageLevel: newLevel,
-                              aiAnalysis: { ...p.aiAnalysis, triageLevel: newLevel }
-                          } : p));
-                          
-                          try {
-                              await updatePatient(patient._id, { triageLevel: newLevel });
-                              toast.success("Priority level updated");
-                          } catch (error) {
-                              toast.error("Failed to update priority");
-                          }
-                      }}
                     />
                   ))}
                   {!isLoading && sortedUnscheduledItems.length === 0 && (
@@ -508,8 +490,8 @@ export default function NurseDashboard() {
               {/* Droppable Area */}
               <DroppableContainer 
                 id="scheduled-container" 
-                className={`space-y-3 min-h-[300px] transition-all ${
-                  sortedScheduledItems.length === 0 ? ' bg-white flex items-center justify-center' : ''
+                className={`space-y-3 min-h-[200px] transition-all ${
+                  sortedScheduledItems.length === 0 ? ' flex items-center justify-center' : ''
                 }`}
               >
                  <SortableContext items={sortedScheduledItems.map(p => p._id)} strategy={verticalListSortingStrategy}>
@@ -523,31 +505,20 @@ export default function NurseDashboard() {
                         onVitals={handleVitalsClick}
                         onClick={handleCardClick}
                         onPin={handlePin}
-                        onTriageChange={async (patient, newLevel) => {
-                            // Optimistic Update
-                            setItems(prev => prev.map(p => p._id === patient._id ? { 
-                                ...p, 
-                                triageLevel: newLevel,
-                                aiAnalysis: { ...p.aiAnalysis, triageLevel: newLevel } // Sync AI display too
-                            } : p));
-                            
-                            try {
-                                await updatePatient(patient._id, { triageLevel: newLevel });
-                                toast.success("Priority level updated");
-                            } catch (error) {
-                                toast.error("Failed to update priority");
-                               
-                            }
-                        }}
+                        onTreatment={handleCardClick} // Pass treatment handler
                         onAIAnalysis={(patient) => {
-                          const hasAnalysis = patient.aiAnalysis && patient.aiAnalysis.score != null;
-                          openModal(hasAnalysis ? 'AI_VIEW' : 'AI', patient);
+                          // Always open AI generation modal to re-analyze
+                          openModal('AI', patient);
                         }}
                       />
                     ))}
                     
                     {/* Persistent Drop Zone Placeholder */}
-                  
+                    {sortedScheduledItems.length === 0 && (
+                      <div className="h-30 w-full border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center text-gray-400 font-medium">
+                        Drag patients here for Triage
+                      </div>
+                    )}
                  </SortableContext>
               </DroppableContainer>
             </div>

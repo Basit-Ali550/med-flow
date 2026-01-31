@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
-import { Activity, User, Stethoscope, CheckCircle2 } from "lucide-react";
+import {  User, Stethoscope } from "lucide-react";
 import Image from "next/image";
 import logo from "@/assets/Images/MedFlow.svg";
 
@@ -26,7 +26,7 @@ export default function Home() {
           <div className="flex items-center justify-center mb-2 ">
             <Image src={logo} alt="Logo" width={200} height={200} />
           </div>
-          <h1 className="text-2xl font-bold text-[#0f172a]">Welcome to ER Triage</h1>
+          <h1 className="text-2xl font-bold text-[#0f172a]">Welcome to MedFlow</h1>
           <p className="text-[#64748b] text-sm">Please select your role to continue</p>
         </div>
 
@@ -49,7 +49,7 @@ export default function Home() {
             </div>
             <div className="flex-1 text-left">
               <h3 className="font-bold text-[#0f172a]">Patient</h3>
-              <p className="text-xs text-[#64748b]">I am here to register for ER services</p>
+              <p className="text-xs text-[#64748b]">I am here to register for Patient</p>
             </div>
             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center
               ${selectedRole === "patient" ? "border-[#10b981]" : "border-gray-300"}`}>
@@ -103,8 +103,6 @@ export default function Home() {
           Continue
         </button>
       </Card>
-
-      {/* Decorative styling for the page background if needed, keeping it minimal as requested */}
     </div>
   );
 }

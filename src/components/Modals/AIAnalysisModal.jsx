@@ -4,13 +4,13 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   X,
   BrainCircuit,
   CheckCircle2,
   Stethoscope,
   Activity,
-  ClipboardList,
 } from "lucide-react";
 
 export function AIAnalysisModal({
@@ -137,14 +137,9 @@ export function AIAnalysisModal({
     if (isOpen && patient) {
       // Improved check: Use optional chaining and check against null/undefined explicitly
       // to handle score = 0 cases.
-      if (patient.aiAnalysis && patient.aiAnalysis.score != null) {
-        console.log("Using cached analysis:", patient.aiAnalysis);
-        setAnalysis(patient.aiAnalysis);
-        setLoading(false);
-      } else {
-        console.log("No valid analysis found, generating new...");
-        generateAnalysis();
-      }
+      // Force re-analysis every time the modal is opened
+      console.log("Starting new analysis...");
+      generateAnalysis();
     } else {
       // Reset state when closed
       setLoading(true);
@@ -212,7 +207,7 @@ export function AIAnalysisModal({
           ) : (
             <div className="flex flex-col md:flex-row h-full min-h-[500px]">
               {/* LEFT COLUMN: Patient Context (40%) */}
-              <div className="md:w-[35%] bg-gray-50 border-r border-gray-100 p-6 flex flex-col gap-6">
+              <div className="md:w-[35%] bg-gray-50 border-r border-gray-100 p-6 flex flex-col gap-4">
                 {/* Identity */}
                 <div className="space-y-3">
                   <div className="w-16 h-16 rounded-2xl bg-white border border-gray-200 shadow-sm flex items-center justify-center mb-2">
@@ -227,33 +222,39 @@ export function AIAnalysisModal({
                     <p className="text-sm text-gray-500 font-medium mt-1">
                       {patient.age || "N/A"} Years • {patient.gender}
                     </p>
+                    {/* Pain & Wait - Below Age/Gender */}
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "border",
+                          (patient.painLevel || 0) <= 4
+                            ? "bg-green-50 text-green-700 border-green-200"
+                            : (patient.painLevel || 0) <= 7
+                              ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                              : "bg-red-50 text-red-700 border-red-200",
+                        )}
+                      >
+                        Pain: {patient.painLevel}/10
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className="bg-white text-gray-600 border-gray-200"
+                      >
+                        Wait: {patient.waitTime || 0}m
+                      </Badge>
+                    </div>
                   </div>
                 </div>
 
-                {/* Complaint */}
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                {/* Symptoms Section */}
+                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mt-auto">
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                    Chief Complaint
+                    Symptoms
                   </h4>
-                  <p className="text-gray-800 text-sm font-medium leading-relaxed italic">
-                    &quot;{patient.symptoms}&quot;
+                  <p className="text-gray-800 text-sm font-medium leading-relaxed">
+                    {patient.symptoms}
                   </p>
-                </div>
-
-                {/* Context Stats */}
-                <div className="flex flex-wrap gap-2 mt-auto">
-                  <Badge
-                    variant="outline"
-                    className="bg-white text-gray-600 border-gray-200"
-                  >
-                    Pain: {patient.painLevel}/10
-                  </Badge>
-                  <Badge
-                    variant="outline"
-                    className="bg-white text-gray-600 border-gray-200"
-                  >
-                    Wait: {patient.waitTime || 0}m
-                  </Badge>
                 </div>
               </div>
 
@@ -273,7 +274,16 @@ export function AIAnalysisModal({
 
                   <div className="text-right">
                     <div className="flex items-center justify-end gap-3 mb-1">
-                      <span className="text-3xl font-black text-teal-700">
+                      <span
+                        className={cn(
+                          "text-3xl font-black",
+                          (analysis.score ?? 0) <= 39
+                            ? "text-green-600"
+                            : (analysis.score ?? 0) <= 79
+                              ? "text-yellow-600"
+                              : "text-red-600",
+                        )}
+                      >
                         {analysis.score}
                       </span>
                       <div className="h-8 w-[2px] bg-gray-200"></div>
@@ -340,20 +350,25 @@ export function AIAnalysisModal({
                         label="HR"
                         value={patient.vitalSigns?.heartRate}
                         unit="bpm"
+                        type="HR"
                       />
                       <CompactVital
                         label="BP"
                         value={`${patient.vitalSigns?.bloodPressureSys || "--"}/${patient.vitalSigns?.bloodPressureDia || "--"}`}
+                        valSys={patient.vitalSigns?.bloodPressureSys}
+                        type="BP"
                       />
                       <CompactVital
                         label="Temp"
                         value={patient.vitalSigns?.temperature}
                         unit="°C"
+                        type="Temp"
                       />
                       <CompactVital
                         label="O2"
                         value={patient.vitalSigns?.o2Saturation}
                         unit="%"
+                        type="O2"
                       />
                     </div>
                   </div>
@@ -381,7 +396,7 @@ export function AIAnalysisModal({
                       }
                       onClose();
                     }}
-                    className="bg-gray-900 hover:bg-black text-white rounded-full px-6 py-2 h-10 text-sm font-bold shadow-lg transition-all cursor-pointer pointer-events-auto"
+                    className="bg-[#0D9488]  text-white rounded-full px-6 py-2 h-10 text-sm font-bold shadow-lg transition-all cursor-pointer pointer-events-auto"
                   >
                     Acknowledge Assessment
                   </Button>
@@ -395,13 +410,39 @@ export function AIAnalysisModal({
   );
 }
 
-function CompactVital({ label, value, unit }) {
+function CompactVital({ label, value, unit, type, valSys }) {
+  let colorClass = "text-gray-900";
+
+  if (value && value !== "--") {
+    const num = parseFloat(value); // For BP this might be NaN, handled below
+
+    if (type === "HR") {
+      if (num < 60 || num > 100) colorClass = "text-red-600";
+      else colorClass = "text-green-600";
+    } else if (type === "Temp") {
+      if (num < 36.5 || num > 37.5) colorClass = "text-red-600";
+      else colorClass = "text-green-600";
+    } else if (type === "O2") {
+      if (num < 90) colorClass = "text-red-600";
+      else if (num < 95) colorClass = "text-yellow-600";
+      else colorClass = "text-green-600";
+    } else if (type === "BP") {
+      // Use systolic value passed separately
+      const sys = parseFloat(valSys);
+      if (!isNaN(sys)) {
+        if (sys >= 140 || sys < 90) colorClass = "text-red-600";
+        else if (sys >= 120) colorClass = "text-yellow-600";
+        else colorClass = "text-green-600";
+      }
+    }
+  }
+
   return (
     <div className="bg-gray-50 border border-gray-100 rounded-lg p-2 text-center">
       <div className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">
         {label}
       </div>
-      <div className="text-sm font-bold text-gray-900 truncate">
+      <div className={cn("text-sm font-bold truncate", colorClass)}>
         {value || "--"}{" "}
         <span className="text-[9px] font-normal text-gray-400">{unit}</span>
       </div>
